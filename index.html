@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2013 Camaro RS - Passenger Fender Installation Guide</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #f5f5f8; --panel: #ffffff; --panel-border: #d0d0dc;
+    --accent: #d4500a; --accent-light: #fff0e8;
+    --warning: #c02020; --warning-bg: #fff0f0;
+    --success: #1a7a3a; --success-bg: #f0fff4;
+    --info: #1a5aaa; --info-bg: #f0f5ff;
+    --text: #1a1a2e; --text-dim: #666677;
+    --hard: #c02020; --medium: #b06600; --easy: #1a7a3a;
+  }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; height: 100vh; overflow: hidden; }
+  #app { display: grid; grid-template-columns: 1fr 440px; grid-template-rows: auto 1fr auto; height: 100vh; }
+
+  #header { grid-column: 1 / -1; background: var(--panel); border-bottom: 1px solid var(--panel-border); padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; }
+  #header h1 { font-size: 15px; font-weight: 700; color: var(--accent); }
+  #header .vin { font-size: 11px; color: var(--text-dim); font-family: 'SF Mono', monospace; }
+  #step-counter { background: var(--accent); color: #fff; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+
+  #viewport { position: relative; background: #f8f8fb; overflow: hidden; }
+  #viewport canvas { display: block; width: 100%; height: 100%; }
+  #camera-hint { position: absolute; bottom: 10px; left: 12px; font-size: 10px; color: #999; }
+
+  #side-panel { background: var(--panel); border-left: 1px solid var(--panel-border); display: flex; flex-direction: column; overflow: hidden; }
+  #step-info { padding: 20px; flex: 1; overflow-y: auto; }
+  #step-info h2 { font-size: 20px; color: #111; margin-bottom: 6px; font-weight: 700; }
+
+  .difficulty-badge { display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+  .difficulty-easy { background: var(--success-bg); color: var(--easy); border: 1px solid var(--easy); }
+  .difficulty-medium { background: rgba(176,102,0,0.08); color: var(--medium); border: 1px solid var(--medium); }
+  .difficulty-hard { background: var(--warning-bg); color: var(--hard); border: 1px solid var(--hard); }
+
+  .step-description { font-size: 15px; line-height: 1.7; color: var(--text); margin-bottom: 14px; }
+  .step-description strong { color: #000; }
+
+  .pro-tip { background: var(--info-bg); border-left: 3px solid var(--info); padding: 10px 14px; margin: 12px 0; font-size: 13px; line-height: 1.6; border-radius: 0 8px 8px 0; }
+  .pro-tip::before { content: 'PRO TIP'; display: block; font-size: 10px; font-weight: 700; color: var(--info); letter-spacing: 2px; margin-bottom: 4px; }
+
+  .warning-box { background: var(--warning-bg); border-left: 3px solid var(--hard); padding: 10px 14px; margin: 12px 0; font-size: 13px; line-height: 1.6; border-radius: 0 8px 8px 0; }
+  .warning-box::before { content: 'THIS IS HARD NOW'; display: block; font-size: 10px; font-weight: 700; color: var(--hard); letter-spacing: 2px; margin-bottom: 4px; }
+
+  .fastener-card { background: var(--bg); border: 1px solid var(--panel-border); border-radius: 8px; padding: 12px; margin: 8px 0; }
+  .fastener-card .fc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .fastener-card .fc-type { font-size: 13px; font-weight: 600; color: var(--accent); }
+  .fastener-card .fc-qty { font-size: 11px; background: var(--accent); color: #fff; padding: 1px 8px; border-radius: 10px; font-weight: 700; }
+  .fastener-card .fc-details { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 12px; }
+  .fastener-card .fc-label { color: var(--text-dim); }
+  .fastener-card .fc-value { color: #111; text-align: right; font-weight: 600; }
+
+  .tool-list { margin: 14px 0; }
+  .tool-list h4 { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+  .tool-tag { display: inline-block; background: var(--bg); border: 1px solid var(--panel-border); padding: 4px 10px; border-radius: 6px; font-size: 12px; margin: 2px 4px 2px 0; }
+
+  #step-timeline { padding: 10px 20px; border-top: 1px solid var(--panel-border); display: flex; gap: 4px; overflow-x: auto; }
+  .timeline-dot { width: 28px; height: 28px; min-width: 28px; border-radius: 50%; background: var(--bg); border: 2px solid var(--panel-border); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; color: var(--text); }
+  .timeline-dot:hover { border-color: var(--accent); }
+  .timeline-dot.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .timeline-dot.completed { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+
+  #transport { grid-column: 1 / -1; background: var(--panel); border-top: 1px solid var(--panel-border); padding: 10px 24px; display: flex; align-items: center; gap: 10px; }
+  .transport-btn { background: var(--bg); border: 1px solid var(--panel-border); color: var(--text); width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; transition: all 0.15s; }
+  .transport-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .transport-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #progress-bar-container { flex: 1; height: 6px; background: rgba(0,0,0,0.08); border-radius: 3px; cursor: pointer; }
+  #progress-bar { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; position: relative; }
+  #progress-bar::after { content: ''; position: absolute; right: -6px; top: -4px; width: 14px; height: 14px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px rgba(212,80,10,0.3); }
+  #time-display { font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.4); } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div>
+      <h1>2013 CAMARO RS - PASSENGER FENDER INSTALL</h1>
+      <span class="vin">VIN 2G1FB1**38D9148009 &middot; Fender GM 20943622 &middot; 5th Gen Zeta</span>
+    </div>
+    <span id="step-counter">Step 1 / 16</span>
+  </div>
+
+  <div id="viewport">
+    <div id="camera-hint">Drag to rotate | Scroll to zoom | Right-drag to pan</div>
+  </div>
+
+  <div id="side-panel">
+    <div id="step-info"></div>
+    <div id="step-timeline"></div>
+  </div>
+
+  <div id="transport">
+    <button class="transport-btn" id="btn-start" title="Go to start">&#x23EE;</button>
+    <button class="transport-btn" id="btn-prev" title="Previous step">&#x23EA;</button>
+    <button class="transport-btn active" id="btn-play" title="Play/Pause">&#x25B6;</button>
+    <button class="transport-btn" id="btn-next" title="Next step">&#x23E9;</button>
+    <button class="transport-btn" id="btn-end" title="Go to end">&#x23ED;</button>
+    <div id="progress-bar-container"><div id="progress-bar" style="width:0%"></div></div>
+    <button class="transport-btn" id="btn-speed" title="Playback speed">1x</button>
+    <span id="time-display">0:00</span>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ==========================================
+// STEP DATA
+// ==========================================
+const STEPS = [
+  { id:1, title:"Prep & Inventory Check", difficulty:"easy",
+    description:`<strong>New fender: GM 20943622</strong> (fits all 2010-2015 Camaro trims identically).<br><br>Lay out all fasteners and clips. <strong>Count everything.</strong> Your new fender does NOT include hardware - reuse from old fender.<br><br><strong>Sound foam pads:</strong> Check you have the U-shaped isolator pads that go between fender and body at each bolt point (~7 pads). Transfer from old fender if needed.`,
+    fasteners:[
+      {type:"10mm Head Hex Bolts",qty:"7-8",spec:"Fender-to-body (all locations)",torque:"9-10 N-m (~7 ft-lbs)"},
+      {type:"Push-Pin Retainers (GM 11589292)",qty:"6-8",spec:"Liner clips, 20mm head, 8.5mm hole",torque:"Push to click"},
+      {type:"T20 Torx Screws (GM 11548270)",qty:"3",spec:"Liner to bumper",torque:"Snug"},
+      {type:"U-Shaped Sound Foam Pads",qty:"~7",spec:"Between fender & body at each bolt point",torque:"Adhesive/friction fit"},
+    ],
+    tools:["Parts tray","Flashlight","10mm socket","T20 Torx bit"],
+    tip:"Buy spare push-pins (GM 11589292) and rocker clips. A 170-piece clip kit covers everything.",
+    cam:{x:5,y:3,z:5}, target:{x:0,y:0.3,z:0}, showBolts:[], showGaps:[], fenderOn:false, dur:15 },
+  { id:2, title:"Protect Adjacent Panels", difficulty:"easy",
+    description:`Apply <strong>2-3 layers of masking tape</strong> along the door edge, hood edge, and bumper. Use 3M green automotive tape. Tape the new fender edges too.`,
+    fasteners:[], tools:["Masking tape (2\" wide)","Microfiber cloth"],
+    tip:"Slide tube socks over bumper ends to prevent nicking paint.",
+    cam:{x:4,y:2,z:4}, target:{x:0,y:0.3,z:0}, showBolts:[], showGaps:[], fenderOn:false, dur:10 },
+  { id:3, title:"Verify Brackets & Side Marker", difficulty:"medium",
+    description:`Check upper and lower fender brackets are on the body. Find the <strong>side marker 2-pin connector</strong> dangling free.<br><br><strong>Place sound foam pads</strong> on the body rails at each bolt point now, before offering up the fender.`,
+    fasteners:[{type:"U-Shaped Foam Pads",qty:"~7",spec:"At each bolt point on body",torque:"Adhesive"}],
+    tools:["10mm socket","Ratchet"],
+    warning:"If brackets are bent, remove and bench-straighten. A bent bracket = bad alignment forever.",
+    cam:{x:3,y:2,z:3}, target:{x:0.5,y:0.5,z:0}, showBolts:['side_marker'], showGaps:[], fenderOn:false, dur:12 },
+  { id:4, title:"Offer Up the Fender (Dry Fit)", difficulty:"hard",
+    description:`<strong>This is hard now.</strong> Get a helper. 11-13 lbs, awkward shape. Guide the top edge onto the mounting rail.<br><br>Line up <strong>rear bolt holes first</strong> (A-pillar area). Do NOT insert bolts yet.`,
+    fasteners:[], tools:["A helper","Moving blanket"],
+    warning:"Do NOT rest fender on rocker or let it swing into the door.",
+    cam:{x:3,y:2.5,z:2}, target:{x:0.5,y:0.3,z:0.3}, showBolts:['a_pillar'], showGaps:[], fenderOn:true, dur:20 },
+  { id:5, title:"Start Rear Bolts (A-Pillar)", difficulty:"medium",
+    description:`Hand-thread <strong>2 bolts</strong> into the A-pillar holes. <strong>10mm head. Finger-tight only!</strong><br><br>One near the top (dash area), one lower on hinge pillar.`,
+    fasteners:[{type:"10mm Head Hex Bolt",qty:"2",spec:"A-pillar / hinge pillar",torque:"FINGER TIGHT"}],
+    tools:["10mm socket","6\" extension","Ratchet"],
+    tip:"Open the door all the way for clear access.",
+    cam:{x:0,y:2,z:3}, target:{x:-0.8,y:0.3,z:0.3}, showBolts:['a_pillar'], showGaps:[], fenderOn:true, dur:15 },
+  { id:6, title:"Top Rail Bolts (Hood Line)", difficulty:"medium",
+    description:`Install <strong>3 bolts along the top edge</strong> under the hood. Easiest bolts on the job. <strong>Finger-tight plus one turn.</strong>`,
+    fasteners:[{type:"10mm Head Hex Bolt",qty:"3",spec:"Top edge / under hood",torque:"SNUG ONLY"}],
+    tools:["10mm socket","6\" extension","Ratchet"],
+    tip:"Slotted holes give side-to-side adjustment for hood gap. Center the bolt in the slot.",
+    cam:{x:2,y:4,z:2}, target:{x:0.5,y:0.8,z:0}, showBolts:['top_rail'], showGaps:[], fenderOn:true, dur:15 },
+  { id:7, title:"Front Bolts (Bumper Support)", difficulty:"medium",
+    description:`Install <strong>2-3 bolts (10mm)</strong> at the front edge. The fender tab is <strong>sandwiched between bumper bracket and bumper cover</strong>.`,
+    fasteners:[{type:"10mm Head + Backing Plate",qty:"2-3",spec:"Bumper-to-fender sandwich",torque:"SNUG ONLY"}],
+    tools:["10mm socket","6\" extension"],
+    tip:"Gently pull bumper cover forward at corner to slip fender tab behind it.",
+    cam:{x:3,y:1.5,z:0.5}, target:{x:1.5,y:0.3,z:0.3}, showBolts:['front'], showGaps:[], fenderOn:true, dur:12 },
+  { id:8, title:"Lower / Rocker Bolts", difficulty:"hard",
+    description:`<strong>This is hard now.</strong> Pull down rocker panel trim to access <strong>2 bolts</strong>. Clips WILL break. Use plastic pry tools only.`,
+    fasteners:[{type:"10mm Head Hex Bolt",qty:"2",spec:"Behind rocker trim",torque:"SNUG ONLY"}],
+    tools:["10mm socket","12\" extension","Plastic trim tool","Flashlight"],
+    warning:"Rocker clips WILL break. Have spares. Do NOT use metal tools on rocker trim.",
+    cam:{x:2,y:0.3,z:3}, target:{x:0,y:-0.1,z:0.3}, showBolts:['lower'], showGaps:[], fenderOn:true, dur:25 },
+  { id:9, title:"The Hidden Bolt Behind Foam", difficulty:"hard",
+    description:`<strong>Don't skip this bolt.</strong> Behind the wheel arch foam:<br>1. Pry off star-nut retainer<br>2. Pull foam panel away<br>3. 10mm deep socket on 12" extension<br>4. Thread nut finger-tight`,
+    fasteners:[{type:"10mm Nut on Stud",qty:"1",spec:"Behind foam, lower wheel arch",torque:"SNUG"},{type:"Star Nut Retainer",qty:"1",spec:"Foam panel",torque:"Push on"}],
+    tools:["10mm deep socket","12\" extension","Flashlight","Trim tool"],
+    warning:"Working blind. Feel for the stud first. Cross-threading means removing the fender to fix.",
+    cam:{x:2.5,y:0.5,z:2.5}, target:{x:1,y:0,z:0.5}, showBolts:['hidden'], showGaps:[], fenderOn:true, dur:20 },
+  { id:10, title:"Connect Side Marker Light", difficulty:"easy",
+    description:`Plug the <strong>2-pin connector</strong> into the new fender's marker socket. Standard <strong>194 bulb</strong>. Turn wheels left for room.`,
+    fasteners:[{type:"2-Pin Connector",qty:"1",spec:"194 bulb socket",torque:"Push to click"}],
+    tools:["Hands","Flashlight"],
+    tip:"Hard with big hands. Remove liner completely rather than forcing it.",
+    cam:{x:3,y:1.5,z:1.5}, target:{x:1.2,y:0.2,z:0.5}, showBolts:['side_marker'], showGaps:[], fenderOn:true, dur:8 },
+  { id:11, title:"Set Door Gap (Critical)", difficulty:"hard",
+    description:`<strong>Most critical step.</strong> Close door gently. Target: <strong>4.0-5.0mm</strong>, parallel top to bottom. Match driver side. Adjust via A-pillar bolts.`,
+    fasteners:[], tools:["Gap gauge","10mm wrench"],
+    tip:"Credit card = ~0.8mm. Stack 5-6 for 4.5mm. Flat screwdriver can wedge for more gap.",
+    warning:"Do NOT close door hard. If too tight, it WILL damage both panels.",
+    cam:{x:-1,y:2,z:4}, target:{x:-0.5,y:0.3,z:0.3}, showBolts:['a_pillar'], showGaps:['door'], fenderOn:true, dur:25 },
+  { id:12, title:"Set Hood Gap", difficulty:"medium",
+    description:`Close hood. Target: <strong>3.5-5.0mm</strong>. Adjust via top rail bolts in slotted holes. Hood should sit <strong>flush to 1mm below</strong> fender.`,
+    fasteners:[], tools:["Gap gauge","10mm wrench"],
+    tip:"Hood rubber bumper stops turn up/down for height. 2 Torx screws near latch for fascia height.",
+    cam:{x:2,y:4,z:3}, target:{x:0.5,y:0.8,z:0}, showBolts:['top_rail'], showGaps:['hood'], fenderOn:true, dur:20 },
+  { id:13, title:"Set Bumper Junction", difficulty:"medium",
+    description:`Target: <strong>1.0-3.0mm</strong>. Bumper tucks under fender. Adjust via front 10mm bolts. Surface <strong>within 1mm flush</strong>.`,
+    fasteners:[], tools:["Gap gauge","10mm wrench"],
+    tip:"If uneven, check bumper-to-fender bracket GM 92243313 is intact.",
+    cam:{x:4,y:1.5,z:1}, target:{x:1.5,y:0.3,z:0.3}, showBolts:['front'], showGaps:['bumper'], fenderOn:true, dur:15 },
+  { id:14, title:"Final Torque Sequence", difficulty:"medium",
+    description:`Torque in order:<br>1. A-pillar - 9-10 N-m<br>2. Top rail (rear→front) - 9-10 N-m<br>3. Lower/rocker - 9-10 N-m<br>4. Front/bumper - 9-10 N-m<br>5. Hidden bolt - snug<br><br><strong>Re-check all gaps!</strong>`,
+    fasteners:[{type:"All 10mm Bolts",qty:"7-8",spec:"All mounting points",torque:"9-10 N-m (~7 ft-lbs)"},{type:"Hidden 10mm Nut",qty:"1",spec:"Behind foam",torque:"Snug"}],
+    tools:["Torque wrench (low range)","10mm socket"],
+    warning:"9-10 N-m is barely tight. Snug plus quarter turn. J-nuts WILL STRIP if overtorqued.",
+    cam:{x:4,y:3,z:4}, target:{x:0,y:0.3,z:0}, showBolts:['all'], showGaps:[], fenderOn:true, dur:25 },
+  { id:15, title:"Install Liner & Clips", difficulty:"easy",
+    description:`Reinstall <strong>liner GM 22863722</strong>. Push-pin retainers, 7mm screws, and <strong>3x T20 Torx</strong> where liner meets bumper.`,
+    fasteners:[{type:"Push-Pins (GM 11589292)",qty:"6-8",spec:"Liner to fender",torque:"Click"},{type:"7mm Screws",qty:"2-3",spec:"Top edge",torque:"Snug"},{type:"T20 Torx (GM 11548270)",qty:"3",spec:"Liner to bumper",torque:"Snug"}],
+    tools:["Trim tool","7mm socket","T20 Torx bit"],
+    tip:"Don't skip the Torx screws or liner sags at highway speed.",
+    cam:{x:3,y:0.5,z:3}, target:{x:0.8,y:0,z:0.3}, showBolts:[], showGaps:[], fenderOn:true, dur:15 },
+  { id:16, title:"Final Inspection", difficulty:"easy",
+    description:`Remove tape. Walk-around check:<br>- Door gap: 4.0-5.0mm, parallel<br>- Hood gap: 3.5-5.0mm, flush<br>- Bumper: 1.0-3.0mm<br>- No rattles - push firmly<br>- Door/hood full swing, no contact<br><br>Open/close each 5 times.`,
+    fasteners:[], tools:["Gap gauge","Microfiber cloth"],
+    tip:"Take photos of finished gaps for future reference.",
+    cam:{x:5,y:2.5,z:5}, target:{x:0,y:0.3,z:0}, showBolts:[], showGaps:['door','hood','bumper'], fenderOn:true, dur:15 },
+];
+
+// ==========================================
+// THREE.JS SETUP
+// ==========================================
+const vp = document.getElementById('viewport');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf0f0f4);
+
+const camera = new THREE.PerspectiveCamera(40, vp.clientWidth / vp.clientHeight, 0.1, 100);
+camera.position.set(5, 3, 5);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(vp.clientWidth, vp.clientHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.3;
+vp.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.target.set(0, 0.3, 0);
+
+// Lighting
+scene.add(new THREE.AmbientLight(0x889aaa, 1.5));
+const key = new THREE.DirectionalLight(0xfff0dd, 2);
+key.position.set(5, 8, 4); key.castShadow = true;
+scene.add(key);
+scene.add(new THREE.DirectionalLight(0x6688bb, 0.5).translateX(-3).translateY(4));
+
+// Ground
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(20, 20),
+  new THREE.MeshStandardMaterial({ color: 0xe8e8ee, roughness: 0.9 })
+);
+ground.rotation.x = -Math.PI / 2; ground.position.y = -0.45; ground.receiveShadow = true;
+scene.add(ground);
+scene.add(new THREE.GridHelper(20, 40, 0xccccdd, 0xddddee));
+
+// ==========================================
+// BUILD CAR FROM EXTRUDED BLUEPRINT PROFILE
+// ==========================================
+// Scale: real car 4.84m long. We'll use 1 unit = ~1.5m, so car is ~3.2 units long
+// Centered so front wheel is roughly at origin
+
+const S = 1/1500; // mm to scene units
+
+// Side profile points from blueprint (mm from rear, mm from ground)
+// We'll center the car: rear at x=-1.6, front at x=1.6
+function p(xmm, ymm) { return new THREE.Vector2(xmm * S - 1.6, ymm * S); }
+
+function makeExtrudedShape(points, depth, color, opacity) {
+  const shape = new THREE.Shape();
+  shape.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) shape.lineTo(points[i].x, points[i].y);
+  shape.closePath();
+  const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelSegments: 2 });
+  const mat = new THREE.MeshPhysicalMaterial({
+    color, transparent: opacity < 1, opacity, side: THREE.DoubleSide,
+    metalness: 0.1, roughness: 0.6, clearcoat: 0.3
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.castShadow = true;
+  return mesh;
+}
+
+function makeEdges(mesh, color) {
+  const edges = new THREE.EdgesGeometry(mesh.geometry, 20);
+  const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color }));
+  line.position.copy(mesh.position);
+  line.rotation.copy(mesh.rotation);
+  return line;
+}
+
+// BODY PROFILE (side view outline - simplified from blueprint)
+const bodyPts = [
+  p(0, 0), // rear bottom
+  p(0, 500), // rear top (deck)
+  p(200, 650), // C-pillar
+  p(600, 900), // roof rear
+  p(1000, 920), // roof peak
+  p(1200, 880), // roof front
+  p(1400, 700), // A-pillar base (beltline)
+  p(1600, 680), // mid-fender beltline
+  p(2400, 660), // front fender beltline
+  p(3200, 640), // near headlight
+  p(3600, 640), // hood front
+  p(3800, 580), // nose dip
+  p(4000, 520), // bumper top
+  p(4050, 400), // bumper face upper
+  p(4050, 100), // bumper face lower
+  p(4000, 0),   // bumper bottom
+  p(3600, 0),   // underside front
+  p(2600, 0),   // front wheel area bottom
+  p(1600, 0),   // underside mid
+  p(600, 0),    // rear wheel area bottom
+];
+
+const carGroup = new THREE.Group();
+scene.add(carGroup);
+
+// Body - extruded with car width (~1920mm, so half = 960mm = 0.64 units each side)
+const bodyMesh = makeExtrudedShape(bodyPts, 1.28, 0x2a2a30, 0.25);
+bodyMesh.rotation.x = -Math.PI / 2;
+bodyMesh.position.set(0, 0, -0.64);
+carGroup.add(bodyMesh);
+const bodyEdges = makeEdges(bodyMesh, 0x445566);
+carGroup.add(bodyEdges);
+
+// FENDER PROFILE (the part being installed - from door line forward)
+// Door line is roughly at x=1400mm from rear = about 1400*S - 1.6
+const fenderPts = [
+  p(1400, 0),    // door line bottom
+  p(1400, 700),  // door line top (beltline)
+  p(1600, 680),  // just forward of door
+  p(2000, 670),  // fender mid
+  p(2400, 660),  // approaching wheel arch top
+  p(2800, 650),  // past arch
+  p(3200, 640),  // near headlight
+  p(3600, 640),  // hood front
+  p(3800, 580),  // nose
+  p(4000, 520),  // bumper top
+  p(4050, 400),  // bumper face
+  p(4050, 100),  // bumper bottom
+  p(4000, 0),    // bumper floor
+  p(3600, 0),    // underside
+  // Wheel arch cutout (approximate)
+  p(3200, 0),
+  p(3100, 100),
+  p(3000, 250),
+  p(2850, 350),
+  p(2650, 400),
+  p(2450, 350),
+  p(2300, 250),
+  p(2200, 100),
+  p(2100, 0),
+  // Continue underside to door
+  p(1600, 0),
+];
+
+const fenderMesh = makeExtrudedShape(fenderPts, 1.30, 0xdd5500, 0.35);
+fenderMesh.rotation.x = -Math.PI / 2;
+fenderMesh.position.set(0, 0, -0.65);
+fenderMesh.name = 'fender';
+carGroup.add(fenderMesh);
+const fenderEdges = makeEdges(fenderMesh, 0xdd5500);
+fenderEdges.name = 'fender_edges';
+carGroup.add(fenderEdges);
+
+// ==========================================
+// BOLT MARKERS (3D spheres at bolt locations)
+// ==========================================
+const boltColor = 0xff6600;
+const boltHiddenColor = 0xcc0000;
+const boltGapColor = { door: 0x1a7a3a, hood: 0x1a5aaa, bumper: 0xb06600 };
+const bolts = {};
+
+function addBolt(name, group, x, y, z, color) {
+  const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(0.04, 16, 16),
+    new THREE.MeshStandardMaterial({ color: color || boltColor, emissive: color || boltColor, emissiveIntensity: 0.5 })
+  );
+  sphere.position.set(x, y, z);
+  sphere.visible = false;
+  sphere.name = name;
+  carGroup.add(sphere);
+  // Glow ring
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.05, 0.08, 16),
+    new THREE.MeshBasicMaterial({ color: color || boltColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide })
+  );
+  ring.position.copy(sphere.position);
+  ring.visible = false;
+  carGroup.add(ring);
+  if (!bolts[group]) bolts[group] = [];
+  bolts[group].push({ sphere, ring });
+}
+
+// A-pillar bolts (at door line, passenger side)
+addBolt('ap1', 'a_pillar', p(1400,550).x, p(1400,550).y, 0.66);
+addBolt('ap2', 'a_pillar', p(1400,300).x, p(1400,300).y, 0.66);
+
+// Top rail bolts
+addBolt('tr1', 'top_rail', p(1800,690).x, p(1800,690).y, 0.5);
+addBolt('tr2', 'top_rail', p(2400,665).x, p(2400,665).y, 0.5);
+addBolt('tr3', 'top_rail', p(3200,645).x, p(3200,645).y, 0.5);
+
+// Front bolts
+addBolt('fr1', 'front', p(3900,450).x, p(3900,450).y, 0.66);
+addBolt('fr2', 'front', p(3900,300).x, p(3900,300).y, 0.66);
+addBolt('fr3', 'front', p(3900,150).x, p(3900,150).y, 0.66);
+
+// Lower bolts
+addBolt('lo1', 'lower', p(1700,30).x, p(1700,30).y, 0.66);
+addBolt('lo2', 'lower', p(2000,30).x, p(2000,30).y, 0.66);
+
+// Hidden bolt
+addBolt('hid', 'hidden', p(2650,80).x, p(2650,80).y, 0.66, boltHiddenColor);
+
+// Side marker
+addBolt('sm', 'side_marker', p(3300,400).x, p(3300,400).y, 0.67, 0x1a7a3a);
+
+// Gap indicators (lines)
+const gapLines = {};
+function addGapLine(name, x, y1, y2, color) {
+  const pts = [new THREE.Vector3(x, y1, 0.67), new THREE.Vector3(x, y2, 0.67)];
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const line = new THREE.Line(geo, new THREE.LineDashedMaterial({ color, dashSize: 0.05, gapSize: 0.03, linewidth: 2 }));
+  line.computeLineDistances();
+  line.visible = false;
+  carGroup.add(line);
+  gapLines[name] = line;
+}
+addGapLine('door', p(1400,0).x, p(1400,100).y, p(1400,650).y, boltGapColor.door);
+addGapLine('hood', p(2400,670).x, p(2400,670).y, p(2400,700).y, boltGapColor.hood);
+addGapLine('bumper', p(4050,0).x, p(4050,150).y, p(4050,450).y, boltGapColor.bumper);
+
+// ==========================================
+// SCENE UPDATES PER STEP
+// ==========================================
+let camTarget = new THREE.Vector3();
+let camPos = new THREE.Vector3();
+let animating = false;
+let animT = 1;
+
+function updateScene(idx) {
+  const step = STEPS[idx];
+
+  // Hide all bolts and gaps
+  Object.values(bolts).forEach(arr => arr.forEach(b => { b.sphere.visible = false; b.ring.visible = false; }));
+  Object.values(gapLines).forEach(l => l.visible = false);
+
+  // Show requested bolts
+  const show = step.showBolts || [];
+  if (show.includes('all')) {
+    Object.values(bolts).forEach(arr => arr.forEach(b => { b.sphere.visible = true; b.ring.visible = true; }));
+  } else {
+    show.forEach(g => { if (bolts[g]) bolts[g].forEach(b => { b.sphere.visible = true; b.ring.visible = true; }); });
+  }
+
+  // Show gaps
+  (step.showGaps || []).forEach(g => { if (gapLines[g]) gapLines[g].visible = true; });
+
+  // Fender visibility
+  fenderMesh.material.opacity = step.fenderOn ? 0.35 : 0.08;
+  fenderEdges.material.color.set(step.fenderOn ? 0xdd5500 : 0xddaa88);
+
+  // Body dim
+  bodyMesh.material.opacity = step.fenderOn ? 0.15 : 0.25;
+
+  // Animate camera
+  camPos.set(step.cam.x, step.cam.y, step.cam.z);
+  camTarget.set(step.target.x, step.target.y, step.target.z);
+  animT = 0;
+  animating = true;
+}
+
+// ==========================================
+// STEP RENDERING (panel)
+// ==========================================
+let currentStep = 0, isPlaying = false, playbackSpeed = 1, stepStartTime = 0;
+
+function renderStepInfo(idx) {
+  const s = STEPS[idx], panel = document.getElementById('step-info');
+  let h = `<h2>${s.title}</h2><span class="difficulty-badge difficulty-${s.difficulty}">${s.difficulty}</span><div class="step-description">${s.description}</div>`;
+  if (s.warning) h += `<div class="warning-box">${s.warning}</div>`;
+  if (s.tip) h += `<div class="pro-tip">${s.tip}</div>`;
+  if (s.fasteners.length) {
+    h += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin:16px 0 8px;">Fasteners</h4>`;
+    s.fasteners.forEach(f => h += `<div class="fastener-card"><div class="fc-header"><span class="fc-type">${f.type}</span><span class="fc-qty">x${f.qty}</span></div><div class="fc-details"><span class="fc-label">Location</span><span class="fc-value">${f.spec}</span><span class="fc-label">Torque</span><span class="fc-value">${f.torque}</span></div></div>`);
+  }
+  if (s.tools.length) {
+    h += `<div class="tool-list"><h4>Tools</h4>`;
+    s.tools.forEach(t => h += `<span class="tool-tag">${t}</span>`);
+    h += `</div>`;
+  }
+  panel.innerHTML = h;
+  document.getElementById('step-counter').textContent = `Step ${idx+1} / ${STEPS.length}`;
+  document.getElementById('progress-bar').style.width = (idx/(STEPS.length-1)*100)+'%';
+  const tc = document.getElementById('step-timeline'); tc.innerHTML = '';
+  STEPS.forEach((st,i) => {
+    const d = document.createElement('div');
+    d.className = 'timeline-dot'+(i===idx?' active':'')+(i<idx?' completed':'');
+    d.textContent = i+1; d.title = st.title; d.onclick = () => goToStep(i); tc.appendChild(d);
+  });
+  updateScene(idx);
+}
+
+function goToStep(i) { currentStep = Math.max(0, Math.min(STEPS.length-1, i)); stepStartTime = performance.now(); renderStepInfo(currentStep); }
+function nextStep() { if (currentStep < STEPS.length-1) goToStep(currentStep+1); else { isPlaying = false; updatePlayBtn(); } }
+function prevStep() { if (currentStep > 0) goToStep(currentStep-1); }
+function togglePlay() { isPlaying = !isPlaying; if (isPlaying) stepStartTime = performance.now(); updatePlayBtn(); }
+function updatePlayBtn() { const b = document.getElementById('btn-play'); b.innerHTML = isPlaying?'&#x23F8;':'&#x25B6;'; b.classList.toggle('active', isPlaying); }
+function cycleSpeed() { const sp = [0.5,1,1.5,2,3]; playbackSpeed = sp[(sp.indexOf(playbackSpeed)+1)%sp.length]; document.getElementById('btn-speed').textContent = playbackSpeed+'x'; }
+
+document.getElementById('btn-play').onclick = togglePlay;
+document.getElementById('btn-next').onclick = nextStep;
+document.getElementById('btn-prev').onclick = prevStep;
+document.getElementById('btn-start').onclick = () => goToStep(0);
+document.getElementById('btn-end').onclick = () => goToStep(STEPS.length-1);
+document.getElementById('btn-speed').onclick = cycleSpeed;
+document.getElementById('progress-bar-container').onclick = e => { const r = e.currentTarget.getBoundingClientRect(); goToStep(Math.round((e.clientX-r.left)/r.width*(STEPS.length-1))); };
+document.addEventListener('keydown', e => { if(e.key===' '){e.preventDefault();togglePlay();}else if(e.key==='ArrowRight')nextStep();else if(e.key==='ArrowLeft')prevStep(); });
+
+// ==========================================
+// ANIMATION LOOP
+// ==========================================
+function ease(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
+const startCamPos = new THREE.Vector3();
+const startTarget = new THREE.Vector3();
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+
+  // Camera animation
+  if (animating && animT < 1) {
+    if (animT === 0) { startCamPos.copy(camera.position); startTarget.copy(controls.target); }
+    animT = Math.min(1, animT + dt * 1.2);
+    const t = ease(animT);
+    camera.position.lerpVectors(startCamPos, camPos, t);
+    controls.target.lerpVectors(startTarget, camTarget, t);
+    if (animT >= 1) animating = false;
+  }
+
+  // Bolt pulse
+  const time = performance.now() * 0.003;
+  Object.values(bolts).forEach(arr => arr.forEach(b => {
+    if (b.ring.visible) {
+      b.ring.lookAt(camera.position);
+      const s = 1 + Math.sin(time) * 0.3;
+      b.ring.scale.set(s, s, 1);
+      b.ring.material.opacity = 0.3 + Math.sin(time) * 0.3;
+    }
+  }));
+
+  // Auto-advance
+  if (isPlaying) {
+    const elapsed = (performance.now() - stepStartTime) / 1000;
+    const dur = STEPS[currentStep].dur / playbackSpeed;
+    const rem = STEPS.slice(currentStep).reduce((s,st) => s + st.dur, 0) / playbackSpeed;
+    document.getElementById('time-display').textContent = `${Math.floor(rem/60)}:${Math.floor(rem%60).toString().padStart(2,'0')}`;
+    if (elapsed >= dur) nextStep();
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => { camera.aspect = vp.clientWidth / vp.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(vp.clientWidth, vp.clientHeight); });
+
+goToStep(0);
+animate();
+</script>
+</body>
+</html>
