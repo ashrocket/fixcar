@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2013 Camaro RS - Passenger Fender Installation Guide</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -23,9 +24,12 @@
   #header .vin { font-size: 11px; color: var(--text-dim); font-family: 'SF Mono', monospace; }
   #step-counter { background: var(--accent); color: #fff; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
 
-  #viewport { position: relative; background: #f8f8fb; overflow: hidden; }
-  #viewport canvas { display: block; width: 100%; height: 100%; }
-  #camera-hint { position: absolute; bottom: 10px; left: 12px; font-size: 10px; color: #999; }
+  #viewport { position: relative; background: #f8f8fb; overflow: hidden; display: flex; flex-direction: column; }
+  #viewport canvas { display: block; flex: 1; }
+  #viewport iframe { flex: 1; border: none; display: none; }
+  #camera-hint { position: absolute; bottom: 10px; left: 12px; font-size: 10px; color: #999; z-index: 5; }
+  #model-toggle { position: absolute; top: 10px; right: 10px; z-index: 10; background: var(--accent); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  #model-toggle:hover { opacity: 0.9; }
 
   #side-panel { background: var(--panel); border-left: 1px solid var(--panel-border); display: flex; flex-direction: column; overflow: hidden; }
   #step-info { padding: 20px; flex: 1; overflow-y: auto; }
@@ -86,6 +90,21 @@
   </div>
 
   <div id="viewport">
+    <iframe id="sketchfab-embed"
+      src="https://sketchfab.com/models/e0dc72a58f01413b8b9ba67e2bd09344/embed?autostart=1&autospin=0&ui_infos=0&ui_controls=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0&ui_hint=0"
+      style="display:block; flex:1; border:none;"
+      allow="autoplay; fullscreen; xr-spatial-tracking"
+      allowfullscreen></iframe>
+    <button id="tire-toggle" style="position:absolute;top:10px;left:12px;z-index:10;background:#445566;color:white;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;" onclick="toggleWireframe()">Wireframe</button>
+    <div id="diagram-view" style="display:none; flex:1; overflow:hidden; background:#fafbfe;
+  background-image:
+    linear-gradient(90deg, rgba(0,180,216,0.05) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(0,180,216,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,180,216,0.02) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(0,180,216,0.02) 1px, transparent 1px);
+  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;">
+    </div>
+    <button id="model-toggle" onclick="toggleModel()">Switch to Diagram</button>
     <div id="camera-hint">Drag to rotate | Scroll to zoom | Right-drag to pan</div>
   </div>
 
@@ -106,12 +125,8 @@
   </div>
 </div>
 
-<script type="importmap">
-{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
-</script>
-<script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+<script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js"></script>
+<script>
 
 // ==========================================
 // STEP DATA
@@ -216,260 +231,193 @@ const STEPS = [
 ];
 
 // ==========================================
-// THREE.JS SETUP
+// SKETCHFAB VIEWER API - wireframe & tire control
 // ==========================================
-const vp = document.getElementById('viewport');
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xf0f0f4);
+let sfApi = null;
+let sfReady = false;
+let wireframeOn = false;
+let tiresHidden = false;
+let sceneNodes = [];
 
-const camera = new THREE.PerspectiveCamera(40, vp.clientWidth / vp.clientHeight, 0.1, 100);
-camera.position.set(5, 3, 5);
+// Initialize the Sketchfab API on the existing iframe
+(function initSketchfabAPI() {
+  const iframe = document.getElementById('sketchfab-embed');
+  const client = new Sketchfab(iframe);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(vp.clientWidth, vp.clientHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.3;
-vp.appendChild(renderer.domElement);
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.08;
-controls.target.set(0, 0.3, 0);
-
-// Lighting
-scene.add(new THREE.AmbientLight(0x889aaa, 1.5));
-const key = new THREE.DirectionalLight(0xfff0dd, 2);
-key.position.set(5, 8, 4); key.castShadow = true;
-scene.add(key);
-scene.add(new THREE.DirectionalLight(0x6688bb, 0.5).translateX(-3).translateY(4));
-
-// Ground
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(20, 20),
-  new THREE.MeshStandardMaterial({ color: 0xe8e8ee, roughness: 0.9 })
-);
-ground.rotation.x = -Math.PI / 2; ground.position.y = -0.45; ground.receiveShadow = true;
-scene.add(ground);
-scene.add(new THREE.GridHelper(20, 40, 0xccccdd, 0xddddee));
-
-// ==========================================
-// BUILD CAR FROM EXTRUDED BLUEPRINT PROFILE
-// ==========================================
-// Scale: real car 4.84m long. We'll use 1 unit = ~1.5m, so car is ~3.2 units long
-// Centered so front wheel is roughly at origin
-
-const S = 1/1500; // mm to scene units
-
-// Side profile points from blueprint (mm from rear, mm from ground)
-// We'll center the car: rear at x=-1.6, front at x=1.6
-function p(xmm, ymm) { return new THREE.Vector2(xmm * S - 1.6, ymm * S); }
-
-function makeExtrudedShape(points, depth, color, opacity) {
-  const shape = new THREE.Shape();
-  shape.moveTo(points[0].x, points[0].y);
-  for (let i = 1; i < points.length; i++) shape.lineTo(points[i].x, points[i].y);
-  shape.closePath();
-  const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelSegments: 2 });
-  const mat = new THREE.MeshPhysicalMaterial({
-    color, transparent: opacity < 1, opacity, side: THREE.DoubleSide,
-    metalness: 0.1, roughness: 0.6, clearcoat: 0.3
+  client.init(iframe.src.split('/embed')[0].split('/models/')[1].split('/')[0], {
+    success: function(api) {
+      sfApi = api;
+      api.start();
+      api.addEventListener('viewerready', function() {
+        sfReady = true;
+        // Get scene graph to find tire/wheel nodes
+        api.getNodeMap(function(err, nodes) {
+          if (!err) {
+            sceneNodes = nodes;
+            console.log('Sketchfab nodes loaded:', Object.keys(nodes).length);
+            // Log node names to find tires
+            Object.values(nodes).forEach(n => {
+              if (n.name) console.log('Node:', n.name, n.instanceID);
+            });
+          }
+        });
+      });
+    },
+    error: function() { console.log('Sketchfab API init failed - using basic embed'); },
+    autostart: 1,
+    ui_infos: 0, ui_controls: 0, ui_stop: 0, ui_watermark: 0, ui_hint: 0
   });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.castShadow = true;
-  return mesh;
+})();
+
+function toggleWireframe() {
+  if (!sfReady || !sfApi) return;
+  wireframeOn = !wireframeOn;
+  const btn = document.getElementById('tire-toggle');
+
+  if (wireframeOn) {
+    btn.textContent = 'Solid';
+    sfApi.setWireframe(true);
+    // Hide tires/wheels
+    Object.values(sceneNodes).forEach(node => {
+      if (node.name && (
+        node.name.toLowerCase().includes('tire') ||
+        node.name.toLowerCase().includes('tyre') ||
+        node.name.toLowerCase().includes('wheel') ||
+        node.name.toLowerCase().includes('rim') ||
+        node.name.toLowerCase().includes('roda') ||
+        node.name.toLowerCase().includes('ban')
+      )) {
+        sfApi.hide(node.instanceID);
+      }
+    });
+  } else {
+    btn.textContent = 'Wireframe';
+    sfApi.setWireframe(false);
+    Object.values(sceneNodes).forEach(node => {
+      if (node.name && (
+        node.name.toLowerCase().includes('tire') ||
+        node.name.toLowerCase().includes('tyre') ||
+        node.name.toLowerCase().includes('wheel') ||
+        node.name.toLowerCase().includes('rim') ||
+        node.name.toLowerCase().includes('roda') ||
+        node.name.toLowerCase().includes('ban')
+      )) {
+        sfApi.show(node.instanceID);
+      }
+    });
+  }
 }
 
-function makeEdges(mesh, color) {
-  const edges = new THREE.EdgesGeometry(mesh.geometry, 20);
-  const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color }));
-  line.position.copy(mesh.position);
-  line.rotation.copy(mesh.rotation);
-  return line;
+// ==========================================
+// CAMERA POSITIONS PER STEP (Sketchfab API)
+// ==========================================
+// Sketchfab camera: position [x,y,z], target [x,y,z]
+// The model is centered roughly at origin. Passenger fender is on the +X side.
+// Front of car is roughly +Y, top is +Z
+const stepCameras = {
+  0:  { pos: [3, -4, 2],    tgt: [0.5, 1, 0.3] },    // overview, passenger 3/4
+  1:  { pos: [3, -4, 2],    tgt: [0.5, 1, 0.3] },    // protect panels
+  2:  { pos: [2, -2, 1.5],  tgt: [0.8, 1.5, 0.2] },  // brackets & marker
+  3:  { pos: [2.5, -3, 1.8],tgt: [0.5, 1, 0.3] },    // dry fit
+  4:  { pos: [1.5, -1, 1],  tgt: [0.3, 0.2, 0.3] },  // A-pillar bolts (rear of fender, near door)
+  5:  { pos: [2, -1, 2.5],  tgt: [0.5, 1.5, 0.5] },  // top rail (looking down at hood line)
+  6:  { pos: [2.5, -2, 0.8],tgt: [0.8, 2.5, 0.2] },  // front bolts (bumper area)
+  7:  { pos: [2, -2, 0.2],  tgt: [0.5, 0.5, -0.2] }, // lower/rocker (looking under)
+  8:  { pos: [2.5, -2, 0.3],tgt: [0.8, 1.5, -0.1] }, // hidden bolt (wheel well area)
+  9:  { pos: [2.5, -2, 0.8],tgt: [0.8, 2.2, 0.2] },  // side marker
+  10: { pos: [1.5, -1.5, 1],tgt: [0.3, 0.2, 0.3] },  // door gap
+  11: { pos: [2, -1, 2.5],  tgt: [0.5, 1.5, 0.6] },  // hood gap
+  12: { pos: [2, -3, 1],    tgt: [0.5, 2.5, 0.2] },  // bumper junction
+  13: { pos: [3, -4, 2],    tgt: [0.5, 1, 0.3] },    // torque sequence (full view)
+  14: { pos: [2.5, -2.5, 0.5],tgt:[0.8, 1.5, 0] },   // liner/clips (wheel well)
+  15: { pos: [3.5, -4.5, 2.5],tgt:[0, 0, 0.3] },     // final inspection
+};
+
+function moveCameraToStep(idx) {
+  if (!sfReady || !sfApi) return;
+  const cam = stepCameras[idx] || stepCameras[0];
+  sfApi.setCameraLookAt(cam.pos, cam.tgt, 1.5); // 1.5 second transition
 }
 
-// BODY PROFILE (side view outline - simplified from blueprint)
-const bodyPts = [
-  p(0, 0), // rear bottom
-  p(0, 500), // rear top (deck)
-  p(200, 650), // C-pillar
-  p(600, 900), // roof rear
-  p(1000, 920), // roof peak
-  p(1200, 880), // roof front
-  p(1400, 700), // A-pillar base (beltline)
-  p(1600, 680), // mid-fender beltline
-  p(2400, 660), // front fender beltline
-  p(3200, 640), // near headlight
-  p(3600, 640), // hood front
-  p(3800, 580), // nose dip
-  p(4000, 520), // bumper top
-  p(4050, 400), // bumper face upper
-  p(4050, 100), // bumper face lower
-  p(4000, 0),   // bumper bottom
-  p(3600, 0),   // underside front
-  p(2600, 0),   // front wheel area bottom
-  p(1600, 0),   // underside mid
-  p(600, 0),    // rear wheel area bottom
-];
-
-const carGroup = new THREE.Group();
-scene.add(carGroup);
-
-// Body - extruded with car width (~1920mm, so half = 960mm = 0.64 units each side)
-const bodyMesh = makeExtrudedShape(bodyPts, 1.28, 0x2a2a30, 0.25);
-bodyMesh.rotation.x = -Math.PI / 2;
-bodyMesh.position.set(0, 0, -0.64);
-carGroup.add(bodyMesh);
-const bodyEdges = makeEdges(bodyMesh, 0x445566);
-carGroup.add(bodyEdges);
-
-// FENDER PROFILE (the part being installed - from door line forward)
-// Door line is roughly at x=1400mm from rear = about 1400*S - 1.6
-const fenderPts = [
-  p(1400, 0),    // door line bottom
-  p(1400, 700),  // door line top (beltline)
-  p(1600, 680),  // just forward of door
-  p(2000, 670),  // fender mid
-  p(2400, 660),  // approaching wheel arch top
-  p(2800, 650),  // past arch
-  p(3200, 640),  // near headlight
-  p(3600, 640),  // hood front
-  p(3800, 580),  // nose
-  p(4000, 520),  // bumper top
-  p(4050, 400),  // bumper face
-  p(4050, 100),  // bumper bottom
-  p(4000, 0),    // bumper floor
-  p(3600, 0),    // underside
-  // Wheel arch cutout (approximate)
-  p(3200, 0),
-  p(3100, 100),
-  p(3000, 250),
-  p(2850, 350),
-  p(2650, 400),
-  p(2450, 350),
-  p(2300, 250),
-  p(2200, 100),
-  p(2100, 0),
-  // Continue underside to door
-  p(1600, 0),
-];
-
-const fenderMesh = makeExtrudedShape(fenderPts, 1.30, 0xdd5500, 0.35);
-fenderMesh.rotation.x = -Math.PI / 2;
-fenderMesh.position.set(0, 0, -0.65);
-fenderMesh.name = 'fender';
-carGroup.add(fenderMesh);
-const fenderEdges = makeEdges(fenderMesh, 0xdd5500);
-fenderEdges.name = 'fender_edges';
-carGroup.add(fenderEdges);
-
-// ==========================================
-// BOLT MARKERS (3D spheres at bolt locations)
-// ==========================================
-const boltColor = 0xff6600;
-const boltHiddenColor = 0xcc0000;
-const boltGapColor = { door: 0x1a7a3a, hood: 0x1a5aaa, bumper: 0xb06600 };
-const bolts = {};
-
-function addBolt(name, group, x, y, z, color) {
-  const sphere = new THREE.Mesh(
-    new THREE.SphereGeometry(0.04, 16, 16),
-    new THREE.MeshStandardMaterial({ color: color || boltColor, emissive: color || boltColor, emissiveIntensity: 0.5 })
-  );
-  sphere.position.set(x, y, z);
-  sphere.visible = false;
-  sphere.name = name;
-  carGroup.add(sphere);
-  // Glow ring
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(0.05, 0.08, 16),
-    new THREE.MeshBasicMaterial({ color: color || boltColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide })
-  );
-  ring.position.copy(sphere.position);
-  ring.visible = false;
-  carGroup.add(ring);
-  if (!bolts[group]) bolts[group] = [];
-  bolts[group].push({ sphere, ring });
+// Auto-enable wireframe and move camera on first load
+let initialSetupDone = false;
+function doInitialSetup() {
+  if (initialSetupDone || !sfReady) return;
+  initialSetupDone = true;
+  // Start in wireframe mode, zoomed on fender
+  setTimeout(() => {
+    toggleWireframe(); // enable wireframe
+    moveCameraToStep(0);
+  }, 1000);
 }
 
-// A-pillar bolts (at door line, passenger side)
-addBolt('ap1', 'a_pillar', p(1400,550).x, p(1400,550).y, 0.66);
-addBolt('ap2', 'a_pillar', p(1400,300).x, p(1400,300).y, 0.66);
+// ==========================================
+// VIEW TOGGLE: 3D Model <-> Diagram
+// ==========================================
+let showingModel = true;
 
-// Top rail bolts
-addBolt('tr1', 'top_rail', p(1800,690).x, p(1800,690).y, 0.5);
-addBolt('tr2', 'top_rail', p(2400,665).x, p(2400,665).y, 0.5);
-addBolt('tr3', 'top_rail', p(3200,645).x, p(3200,645).y, 0.5);
+function toggleModel() {
+  showingModel = !showingModel;
+  const embed = document.getElementById('sketchfab-embed');
+  const diagram = document.getElementById('diagram-view');
+  const btn = document.getElementById('model-toggle');
+  const hint = document.getElementById('camera-hint');
 
-// Front bolts
-addBolt('fr1', 'front', p(3900,450).x, p(3900,450).y, 0.66);
-addBolt('fr2', 'front', p(3900,300).x, p(3900,300).y, 0.66);
-addBolt('fr3', 'front', p(3900,150).x, p(3900,150).y, 0.66);
-
-// Lower bolts
-addBolt('lo1', 'lower', p(1700,30).x, p(1700,30).y, 0.66);
-addBolt('lo2', 'lower', p(2000,30).x, p(2000,30).y, 0.66);
-
-// Hidden bolt
-addBolt('hid', 'hidden', p(2650,80).x, p(2650,80).y, 0.66, boltHiddenColor);
-
-// Side marker
-addBolt('sm', 'side_marker', p(3300,400).x, p(3300,400).y, 0.67, 0x1a7a3a);
-
-// Gap indicators (lines)
-const gapLines = {};
-function addGapLine(name, x, y1, y2, color) {
-  const pts = [new THREE.Vector3(x, y1, 0.67), new THREE.Vector3(x, y2, 0.67)];
-  const geo = new THREE.BufferGeometry().setFromPoints(pts);
-  const line = new THREE.Line(geo, new THREE.LineDashedMaterial({ color, dashSize: 0.05, gapSize: 0.03, linewidth: 2 }));
-  line.computeLineDistances();
-  line.visible = false;
-  carGroup.add(line);
-  gapLines[name] = line;
+  if (showingModel) {
+    embed.style.display = 'block';
+    diagram.style.display = 'none';
+    btn.textContent = 'Switch to Diagram';
+    hint.style.display = 'block';
+  } else {
+    embed.style.display = 'none';
+    diagram.style.display = 'flex';
+    btn.textContent = 'Switch to 3D Model';
+    hint.style.display = 'none';
+    initD3Diagram().then(() => {
+      window._diagram.updateStep(currentStep, STEPS[currentStep]);
+    });
+  }
 }
-addGapLine('door', p(1400,0).x, p(1400,100).y, p(1400,650).y, boltGapColor.door);
-addGapLine('hood', p(2400,670).x, p(2400,670).y, p(2400,700).y, boltGapColor.hood);
-addGapLine('bumper', p(4050,0).x, p(4050,150).y, p(4050,450).y, boltGapColor.bumper);
 
-// ==========================================
-// SCENE UPDATES PER STEP
-// ==========================================
-let camTarget = new THREE.Vector3();
-let camPos = new THREE.Vector3();
-let animating = false;
-let animT = 1;
+// Bolt group mapping for SVG diagram
+const svgBoltMap = {
+  a_pillar: 'svg-bolt-apillar', top_rail: 'svg-bolt-toprail',
+  front: 'svg-bolt-front', lower: 'svg-bolt-lower',
+  hidden: 'svg-bolt-hidden', side_marker: 'svg-bolt-sidemarker'
+};
+const svgGapMap = { door: 'svg-gap-door', hood: 'svg-gap-hood', bumper: 'svg-gap-bumper' };
 
-function updateScene(idx) {
+function updateDiagram(idx) {
   const step = STEPS[idx];
+  // Hide all bolt groups and gaps
+  Object.values(svgBoltMap).forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  Object.values(svgGapMap).forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 
-  // Hide all bolts and gaps
-  Object.values(bolts).forEach(arr => arr.forEach(b => { b.sphere.visible = false; b.ring.visible = false; }));
-  Object.values(gapLines).forEach(l => l.visible = false);
-
-  // Show requested bolts
+  // Show bolts for this step
   const show = step.showBolts || [];
   if (show.includes('all')) {
-    Object.values(bolts).forEach(arr => arr.forEach(b => { b.sphere.visible = true; b.ring.visible = true; }));
+    Object.values(svgBoltMap).forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'block'; });
   } else {
-    show.forEach(g => { if (bolts[g]) bolts[g].forEach(b => { b.sphere.visible = true; b.ring.visible = true; }); });
+    show.forEach(g => { const el = document.getElementById(svgBoltMap[g]); if (el) el.style.display = 'block'; });
   }
-
   // Show gaps
-  (step.showGaps || []).forEach(g => { if (gapLines[g]) gapLines[g].visible = true; });
+  (step.showGaps || []).forEach(g => { const el = document.getElementById(svgGapMap[g]); if (el) el.style.display = 'block'; });
 
-  // Fender visibility
-  fenderMesh.material.opacity = step.fenderOn ? 0.35 : 0.08;
-  fenderEdges.material.color.set(step.fenderOn ? 0xdd5500 : 0xddaa88);
+  // Fender highlight
+  const fo = document.getElementById('fender-outline');
+  if (fo) {
+    fo.setAttribute('stroke-width', step.fenderOn ? '3' : '1.5');
+    fo.setAttribute('fill', step.fenderOn ? 'rgba(212,80,10,0.06)' : 'rgba(212,80,10,0.02)');
+  }
+}
 
-  // Body dim
-  bodyMesh.material.opacity = step.fenderOn ? 0.15 : 0.25;
-
-  // Animate camera
-  camPos.set(step.cam.x, step.cam.y, step.cam.z);
-  camTarget.set(step.target.x, step.target.y, step.target.z);
-  animT = 0;
-  animating = true;
+function updateScene(idx) {
+  if (!showingModel) {
+    if (window._diagram) window._diagram.updateStep(idx, STEPS[idx]);
+  } else {
+    moveCameraToStep(idx);
+    if (!initialSetupDone) doInitialSetup();
+  }
 }
 
 // ==========================================
@@ -519,40 +467,8 @@ document.getElementById('btn-speed').onclick = cycleSpeed;
 document.getElementById('progress-bar-container').onclick = e => { const r = e.currentTarget.getBoundingClientRect(); goToStep(Math.round((e.clientX-r.left)/r.width*(STEPS.length-1))); };
 document.addEventListener('keydown', e => { if(e.key===' '){e.preventDefault();togglePlay();}else if(e.key==='ArrowRight')nextStep();else if(e.key==='ArrowLeft')prevStep(); });
 
-// ==========================================
-// ANIMATION LOOP
-// ==========================================
-function ease(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
-const startCamPos = new THREE.Vector3();
-const startTarget = new THREE.Vector3();
-const clock = new THREE.Clock();
-
-function animate() {
-  requestAnimationFrame(animate);
-  const dt = clock.getDelta();
-
-  // Camera animation
-  if (animating && animT < 1) {
-    if (animT === 0) { startCamPos.copy(camera.position); startTarget.copy(controls.target); }
-    animT = Math.min(1, animT + dt * 1.2);
-    const t = ease(animT);
-    camera.position.lerpVectors(startCamPos, camPos, t);
-    controls.target.lerpVectors(startTarget, camTarget, t);
-    if (animT >= 1) animating = false;
-  }
-
-  // Bolt pulse
-  const time = performance.now() * 0.003;
-  Object.values(bolts).forEach(arr => arr.forEach(b => {
-    if (b.ring.visible) {
-      b.ring.lookAt(camera.position);
-      const s = 1 + Math.sin(time) * 0.3;
-      b.ring.scale.set(s, s, 1);
-      b.ring.material.opacity = 0.3 + Math.sin(time) * 0.3;
-    }
-  }));
-
-  // Auto-advance
+// Auto-advance timer
+function tick() {
   if (isPlaying) {
     const elapsed = (performance.now() - stepStartTime) / 1000;
     const dur = STEPS[currentStep].dur / playbackSpeed;
@@ -560,15 +476,24 @@ function animate() {
     document.getElementById('time-display').textContent = `${Math.floor(rem/60)}:${Math.floor(rem%60).toString().padStart(2,'0')}`;
     if (elapsed >= dur) nextStep();
   }
-
-  controls.update();
-  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
 }
 
-window.addEventListener('resize', () => { camera.aspect = vp.clientWidth / vp.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(vp.clientWidth, vp.clientHeight); });
-
 goToStep(0);
-animate();
+tick();
+
+// ==========================================
+// D3 DIAGRAM INTEGRATION
+// ==========================================
+let d3DiagramReady = false;
+
+async function initD3Diagram() {
+  if (d3DiagramReady) return;
+  const mod = await import('./js/diagram.js');
+  await mod.initDiagram('#diagram-view');
+  d3DiagramReady = true;
+  window._diagram = mod;
+}
 </script>
 </body>
 </html>
