@@ -56,7 +56,10 @@ let installedBolts     = new Set();
  */
 export async function initDiagram(containerSelector) {
   if (diagramInitialized) return;
-  diagramInitialized = true;
+
+  // Clear any existing content
+  const container = d3.select(containerSelector);
+  container.selectAll('*').remove();
 
   // --- fetch data ---
   const response = await fetch('data/trace-data.json');
@@ -202,6 +205,8 @@ export async function initDiagram(containerSelector) {
 
   // HUD annotations
   renderHUD();
+
+  diagramInitialized = true;
 }
 
 /**
@@ -215,16 +220,14 @@ export function zoomToTarget(stepIndex, animate = true) {
   const key     = String(stepIndex);
   const target  = targets[key] || targets['0'];
 
-  // Resolve SVG element dimensions for centering
-  const svgNode  = svgEl.node();
-  const svgW     = svgNode.clientWidth  || containerWidth  || 1046;
-  const svgH     = svgNode.clientHeight || containerHeight || 277;
+  // Use viewBox dimensions for centering (robust across container sizes)
+  const [, , vbW, vbH] = traceData.viewBox.split(' ').map(Number);
 
   const scale = target.scale;
-  const tx    = svgW / 2 - target.x * scale;
-  const ty    = svgH / 2 - target.y * scale;
-
-  const transform = d3.zoomIdentity.translate(tx, ty).scale(scale);
+  const transform = d3.zoomIdentity
+    .translate(vbW / 2, vbH / 2)
+    .scale(scale)
+    .translate(-target.x, -target.y);
 
   if (animate) {
     svgEl.transition().duration(600).ease(d3.easeCubicInOut)
@@ -274,11 +277,10 @@ export function updateStep(stepIndex, stepData) {
       });
     }
 
-    // Look up each bolt object from traceData.bolts (keyed by id)
-    const boltsMap = traceData.bolts || {};
-    boltIds.forEach((boltId) => {
-      const bolt = boltsMap[boltId];
-      if (!bolt) return;
+    // Filter bolts array by matching IDs
+    const boltsArray = traceData.bolts || [];
+    const visibleBolts = boltsArray.filter(b => boltIds.includes(b.id));
+    visibleBolts.forEach((bolt) => {
 
       const bg = boltLayer.append('g')
         .attr('class', 'bolt-marker')
@@ -306,10 +308,11 @@ export function updateStep(stepIndex, stepData) {
       bg.append('text')
         .attr('x', 10)
         .attr('y', 4)
+        .attr('font-family', 'DM Mono, monospace')
         .attr('font-size', 6)
         .attr('fill', ACCENT)
         .attr('opacity', 0.9)
-        .text(bolt.label || boltId);
+        .text(bolt.label || bolt.id);
     });
   }
 
