@@ -105,6 +105,8 @@
   background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;">
     </div>
     <button id="model-toggle" onclick="toggleModel()">Switch to Diagram</button>
+    <button id="practice-toggle" onclick="togglePractice()" style="display:none;position:absolute;top:46px;right:10px;z-index:10;background:#1a5aaa;color:white;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Practice Mode</button>
+    <button id="practice-reset" onclick="resetPractice()" style="display:none;position:absolute;top:82px;right:10px;z-index:10;background:#555566;color:white;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Reset</button>
     <div id="camera-hint">Drag to rotate | Scroll to zoom | Right-drag to pan</div>
   </div>
 
@@ -356,27 +358,68 @@ function doInitialSetup() {
 // ==========================================
 let showingModel = true;
 
+let practiceActive = false;
+
 function toggleModel() {
   showingModel = !showingModel;
   const embed = document.getElementById('sketchfab-embed');
   const diagram = document.getElementById('diagram-view');
   const btn = document.getElementById('model-toggle');
   const hint = document.getElementById('camera-hint');
+  const practiceBtn = document.getElementById('practice-toggle');
+  const resetBtn = document.getElementById('practice-reset');
 
   if (showingModel) {
     embed.style.display = 'block';
     diagram.style.display = 'none';
     btn.textContent = 'Switch to Diagram';
     hint.style.display = 'block';
+    practiceBtn.style.display = 'none';
+    resetBtn.style.display = 'none';
+    // Exit sandbox if active
+    if (practiceActive && window._diagram) {
+      window._diagram.exitSandbox();
+      practiceActive = false;
+      practiceBtn.textContent = 'Practice Mode';
+      practiceBtn.style.background = '#1a5aaa';
+    }
   } else {
     embed.style.display = 'none';
     diagram.style.display = 'flex';
     btn.textContent = 'Switch to 3D Model';
     hint.style.display = 'none';
+    practiceBtn.style.display = 'block';
     initD3Diagram().then(() => {
       window._diagram.updateStep(currentStep, STEPS[currentStep]);
     });
   }
+}
+
+function togglePractice() {
+  if (!window._diagram) return;
+  const practiceBtn = document.getElementById('practice-toggle');
+  const resetBtn = document.getElementById('practice-reset');
+
+  if (!practiceActive) {
+    practiceActive = true;
+    window._diagram.enterSandbox();
+    practiceBtn.textContent = 'Exit Practice';
+    practiceBtn.style.background = '#c02020';
+    resetBtn.style.display = 'block';
+  } else {
+    practiceActive = false;
+    window._diagram.exitSandbox();
+    practiceBtn.textContent = 'Practice Mode';
+    practiceBtn.style.background = '#1a5aaa';
+    resetBtn.style.display = 'none';
+    // Restore current step
+    window._diagram.updateStep(currentStep, STEPS[currentStep]);
+  }
+}
+
+function resetPractice() {
+  if (!window._diagram || !practiceActive) return;
+  window._diagram.resetSandbox();
 }
 
 // Bolt group mapping for SVG diagram

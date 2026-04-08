@@ -43,6 +43,8 @@ let containerWidth     = 0;
 let containerHeight    = 0;
 let sandboxMode        = false;
 let currentMode        = 'guided'; // 'guided' | 'sandbox'
+let fenderSnapped      = false;
+let installedBolts     = new Set();
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -406,27 +408,285 @@ export function updateStep(stepIndex, stepData) {
 
 /**
  * enterSandbox()
- * Switches to sandbox mode.
+ * Switches to sandbox (practice) mode: shows draggable fender, hides guided layers.
  */
 export function enterSandbox() {
-  sandboxMode = true;
+  if (!mainGroup || !traceData) return;
+
   currentMode = 'sandbox';
+  sandboxMode = true;
+
+  // Reset zoom to full car view
+  zoomToTarget(0, true);
+
+  // Clear guided-mode layers
+  mainGroup.select('.layer-bolts').selectAll('*').remove();
+  mainGroup.select('.layer-gaps').selectAll('*').remove();
+  mainGroup.select('.layer-fender-zone').selectAll('*').remove();
+
+  // Reset state
+  fenderSnapped  = false;
+  installedBolts = new Set();
+
+  // Render sandbox fender and update counter
+  renderSandboxFender();
+  updateBoltCounter();
 }
 
 /**
  * exitSandbox()
- * Returns to guided mode.
+ * Returns to guided mode, clearing all sandbox elements.
  */
 export function exitSandbox() {
-  sandboxMode = false;
   currentMode = 'guided';
+  sandboxMode = false;
+
+  if (mainGroup) {
+    mainGroup.select('.layer-fender-piece').selectAll('*').remove();
+    mainGroup.select('.layer-bolts').selectAll('*').remove();
+  }
+
+  // Remove bolt counter
+  if (svgEl) svgEl.select('.bolt-counter').remove();
+}
+
+// ---------------------------------------------------------------------------
+// Sandbox internals
+// ---------------------------------------------------------------------------
+
+/**
+ * renderSandboxFender()
+ * Places an interactive, draggable fender piece offset to the right.
+ */
+function renderSandboxFender() {
+  if (!mainGroup || !traceData) return;
+
+  const fenderPieceLayer = mainGroup.select('.layer-fender-piece');
+  fenderPieceLayer.selectAll('*').remove();
+
+  // Fender group — starts offset 500 units right of correct position
+  const fenderGroup = fenderPieceLayer.append('g')
+    .attr('class', 'sandbox-fender-group')
+    .attr('transform', 'translate(500,0)')
+    .style('cursor', 'grab');
+
+  // The path lives inside the potrace transform group
+  const innerG = fenderGroup.append('g')
+    .attr('transform', traceData.transform);
+
+  innerG.append('path')
+    .attr('d', traceData.fenderPath)
+    .attr('fill', 'rgba(212,80,10,0.08)')
+    .attr('stroke', 'rgba(212,80,10,0.5)')
+    .attr('stroke-width', 3)
+    .style('cursor', 'grab');
+
+  // Bolt holes at each bolt position (viewBox coordinates, outside transform group)
+  (traceData.bolts || []).forEach((bolt) => {
+    fenderGroup.append('circle')
+      .attr('class', 'fender-bolt-hole')
+      .attr('cx', bolt.x)
+      .attr('cy', bolt.y)
+      .attr('r', 4)
+      .attr('fill', 'none')
+      .attr('stroke', 'rgba(212,80,10,0.4)')
+      .attr('stroke-width', 1.5)
+      .attr('stroke-dasharray', '2 2');
+  });
+
+  // Drag behaviour
+  const drag = d3.drag()
+    .on('start', function () {
+      d3.select(this).style('cursor', 'grabbing');
+    })
+    .on('drag', function (event) {
+      if (fenderSnapped) return;
+
+      // Parse current translate
+      const transform = d3.select(this).attr('transform');
+      const match = transform.match(/translate\(([^,]+),([^)]+)\)/);
+      let tx = match ? parseFloat(match[1]) : 500;
+      let ty = match ? parseFloat(match[2]) : 0;
+
+      tx += event.dx;
+      ty += event.dy;
+
+      d3.select(this).attr('transform', `translate(${tx},${ty})`);
+
+      // Check snap: within 15 units of (0,0)
+      if (Math.abs(tx) < 15 && Math.abs(ty) < 15) {
+        snapFender(d3.select(this));
+      }
+    })
+    .on('end', function () {
+      if (!fenderSnapped) d3.select(this).style('cursor', 'grab');
+    });
+
+  fenderGroup.call(drag);
+}
+
+/**
+ * snapFender(fenderGroup)
+ * Animates the fender to its correct position, then triggers bolt rendering.
+ */
+function snapFender(fenderGroup) {
+  fenderSnapped = true;
+
+  // Animate to (0,0)
+  fenderGroup.transition().duration(300).ease(d3.easeCubicOut)
+    .attr('transform', 'translate(0,0)')
+    .style('cursor', 'default');
+
+  // Flash fill
+  const path = fenderGroup.select('path');
+  path.transition().duration(150).attr('fill', 'rgba(212,80,10,0.25)')
+    .transition().duration(150).attr('fill', 'rgba(212,80,10,0.08)');
+
+  // After settle, render clickable bolts
+  setTimeout(() => renderSandboxBolts(), 400);
+}
+
+/**
+ * renderSandboxBolts()
+ * Renders all bolt positions as clickable install targets.
+ */
+function renderSandboxBolts() {
+  if (!mainGroup || !traceData) return;
+
+  const boltLayer = mainGroup.select('.layer-bolts');
+  boltLayer.selectAll('*').remove();
+
+  (traceData.bolts || []).forEach((bolt) => {
+    const bg = boltLayer.append('g')
+      .attr('class', 'sandbox-bolt')
+      .attr('data-bolt-id', bolt.id)
+      .attr('transform', `translate(${bolt.x},${bolt.y})`)
+      .style('cursor', 'pointer');
+
+    bg.append('circle')
+      .attr('r', 6)
+      .attr('fill', `rgba(212,80,10,0.15)`)
+      .attr('stroke', ACCENT)
+      .attr('stroke-width', 1.5);
+
+    bg.append('text')
+      .attr('x', 0).attr('y', 2)
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', 5)
+      .attr('font-weight', 'bold')
+      .attr('fill', ACCENT)
+      .attr('pointer-events', 'none')
+      .text(bolt.sequence);
+
+    bg.on('click', function () {
+      if (!installedBolts.has(bolt.id)) {
+        installBolt(bolt, d3.select(this));
+      }
+    });
+  });
+}
+
+/**
+ * installBolt(bolt, el)
+ * Marks a bolt as installed, animates it green, shows torque tooltip.
+ */
+function installBolt(bolt, el) {
+  installedBolts.add(bolt.id);
+
+  // Animate circle to green
+  el.select('circle')
+    .transition().duration(300)
+    .attr('fill', 'rgba(26,122,58,0.3)')
+    .attr('stroke', '#1a7a3a');
+
+  // Torque tooltip text
+  const tooltip = el.append('text')
+    .attr('x', 10)
+    .attr('y', -4)
+    .attr('font-size', 5)
+    .attr('fill', '#1a7a3a')
+    .attr('opacity', 1)
+    .text(`${bolt.tool} — ${bolt.torque}`);
+
+  tooltip.transition().delay(2000).duration(500).attr('opacity', 0)
+    .on('end', function () { d3.select(this).remove(); });
+
+  updateBoltCounter();
+
+  if (installedBolts.size === (traceData.bolts || []).length) {
+    celebrateCompletion();
+  }
+}
+
+/**
+ * updateBoltCounter()
+ * Shows/updates the fixed bolt counter in the top-right of the SVG.
+ */
+function updateBoltCounter() {
+  if (!svgEl) return;
+
+  svgEl.select('.bolt-counter').remove();
+
+  if (currentMode !== 'sandbox') return;
+
+  const total     = (traceData && traceData.bolts) ? traceData.bolts.length : 0;
+  const installed = installedBolts.size;
+
+  // Parse viewBox to position in top-right
+  const vb    = (traceData && traceData.viewBox) ? traceData.viewBox.split(' ').map(Number) : [0, 0, 1046, 277];
+  const vbX   = vb[0];
+  const vbY   = vb[1];
+  const vbW   = vb[2];
+
+  const counterG = svgEl.append('g').attr('class', 'bolt-counter');
+
+  counterG.append('rect')
+    .attr('x', vbX + vbW - 110)
+    .attr('y', vbY + 8)
+    .attr('width', 102)
+    .attr('height', 20)
+    .attr('rx', 4)
+    .attr('fill', 'rgba(0,0,0,0.55)');
+
+  counterG.append('text')
+    .attr('x', vbX + vbW - 59)
+    .attr('y', vbY + 22)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', 9)
+    .attr('font-weight', 'bold')
+    .attr('fill', installed === total ? '#1a7a3a' : '#ffffff')
+    .text(`${installed}/${total} bolts installed`);
+}
+
+/**
+ * celebrateCompletion()
+ * Flashes all bolts green and updates the counter.
+ */
+function celebrateCompletion() {
+  if (!mainGroup) return;
+
+  mainGroup.select('.layer-bolts').selectAll('.sandbox-bolt circle')
+    .transition().duration(200).attr('fill', 'rgba(26,122,58,0.6)').attr('r', 9)
+    .transition().duration(300).attr('r', 6);
+
+  updateBoltCounter();
 }
 
 /**
  * resetSandbox()
- * Resets sandbox state and returns to guided mode.
+ * Resets fender and bolt state without leaving sandbox mode.
  */
 export function resetSandbox() {
-  sandboxMode = false;
-  currentMode = 'guided';
+  if (currentMode !== 'sandbox') return;
+
+  fenderSnapped  = false;
+  installedBolts = new Set();
+
+  if (mainGroup) {
+    mainGroup.select('.layer-bolts').selectAll('*').remove();
+  }
+
+  renderSandboxFender();
+  updateBoltCounter();
 }
