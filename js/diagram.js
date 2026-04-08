@@ -199,6 +199,9 @@ export async function initDiagram(containerSelector) {
 
   // Start at step 0 (full overview), no animation
   zoomToTarget(0, false);
+
+  // HUD annotations
+  renderHUD();
 }
 
 /**
@@ -671,6 +674,102 @@ function celebrateCompletion() {
     .transition().duration(300).attr('r', 6);
 
   updateBoltCounter();
+}
+
+// ---------------------------------------------------------------------------
+// HUD annotations
+// ---------------------------------------------------------------------------
+
+/**
+ * renderHUD()
+ * Populates the .layer-hud group with dimension lines, part info, and zone labels.
+ */
+function renderHUD() {
+  if (!mainGroup || !traceData) return;
+
+  const hudLayer = mainGroup.select('#layer-hud');
+  hudLayer.selectAll('*').remove();
+
+  // Parse viewBox for positioning
+  const vb  = traceData.viewBox.split(' ').map(Number);
+  const vbH = vb[3]; // 277.11
+
+  const rear  = traceData.wheels[0]; // { cx, cy, r }
+  const front = traceData.wheels[1];
+
+  const lineY     = vbH + 8;   // just below viewBox bottom
+  const tickLen   = 6;
+  const tickHalf  = tickLen / 2;
+  const midX      = (rear.cx + front.cx) / 2;
+
+  // --- 1. Wheelbase dimension line ---
+  const wbGroup = hudLayer.append('g').attr('class', 'hud-wheelbase');
+
+  // Main horizontal line
+  wbGroup.append('line')
+    .attr('x1', rear.cx).attr('y1', lineY)
+    .attr('x2', front.cx).attr('y2', lineY)
+    .attr('stroke', HUD_CYAN + '0.35)')
+    .attr('stroke-width', 1);
+
+  // Rear tick mark
+  wbGroup.append('line')
+    .attr('x1', rear.cx).attr('y1', lineY - tickHalf)
+    .attr('x2', rear.cx).attr('y2', lineY + tickHalf)
+    .attr('stroke', HUD_CYAN + '0.35)')
+    .attr('stroke-width', 1);
+
+  // Front tick mark
+  wbGroup.append('line')
+    .attr('x1', front.cx).attr('y1', lineY - tickHalf)
+    .attr('x2', front.cx).attr('y2', lineY + tickHalf)
+    .attr('stroke', HUD_CYAN + '0.35)')
+    .attr('stroke-width', 1);
+
+  // Centered label
+  wbGroup.append('text')
+    .attr('x', midX).attr('y', lineY - 3)
+    .attr('text-anchor', 'middle')
+    .attr('font-family', 'DM Mono, monospace')
+    .attr('font-size', 6)
+    .attr('fill', HUD_CYAN + '0.5)')
+    .text('2852mm WB');
+
+  // --- 2. Part info (top-left) ---
+  const partGroup = hudLayer.append('g').attr('class', 'hud-part-info');
+
+  partGroup.append('text')
+    .attr('x', vb[0] + 6).attr('y', vb[1] + 12)
+    .attr('font-family', 'DM Mono, monospace')
+    .attr('font-size', 6)
+    .attr('font-weight', 'bold')
+    .attr('fill', ACCENT)
+    .attr('opacity', 0.75)
+    .text('FENDER GM 20943622');
+
+  partGroup.append('text')
+    .attr('x', vb[0] + 6).attr('y', vb[1] + 20)
+    .attr('font-family', 'DM Mono, monospace')
+    .attr('font-size', 5)
+    .attr('fill', 'rgba(160,160,180,0.7)')
+    .text('STAMPED STEEL · 11.8 LBS · 7-8x 10MM HEX');
+
+  // --- 3. Zone labels below each wheel ---
+  const zoneGroup = hudLayer.append('g').attr('class', 'hud-zone-labels');
+  const labelY = rear.cy + rear.r + 12;
+
+  [
+    { wheel: rear,  label: 'REAR'  },
+    { wheel: front, label: 'FRONT' },
+  ].forEach(({ wheel, label }) => {
+    zoneGroup.append('text')
+      .attr('x', wheel.cx).attr('y', labelY)
+      .attr('text-anchor', 'middle')
+      .attr('font-family', 'DM Mono, monospace')
+      .attr('font-size', 5)
+      .attr('fill', HUD_CYAN + '0.4)')
+      .text(label);
+  });
 }
 
 /**
