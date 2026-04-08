@@ -65,7 +65,6 @@ export async function initDiagram(containerSelector) {
   const response = await fetch('data/trace-data.json');
   traceData = await response.json();
 
-  const container = d3.select(containerSelector);
   const node      = container.node();
   containerWidth  = node.clientWidth  || 1046;
   containerHeight = node.clientHeight || 277;
