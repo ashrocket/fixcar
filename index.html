@@ -1,526 +1,559 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>2013 Camaro RS - Passenger Fender Installation Guide</title>
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  :root {
-    --bg: #f5f5f8; --panel: #ffffff; --panel-border: #d0d0dc;
-    --accent: #d4500a; --accent-light: #fff0e8;
-    --warning: #c02020; --warning-bg: #fff0f0;
-    --success: #1a7a3a; --success-bg: #f0fff4;
-    --info: #1a5aaa; --info-bg: #f0f5ff;
-    --text: #1a1a2e; --text-dim: #666677;
-    --hard: #c02020; --medium: #b06600; --easy: #1a7a3a;
-  }
-  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; height: 100vh; overflow: hidden; }
-  #app { display: grid; grid-template-columns: 1fr 440px; grid-template-rows: auto 1fr auto; height: 100vh; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camaro Fender Fit Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #eef3f6;
+      --panel: rgba(255, 255, 255, 0.86);
+      --panel-strong: rgba(255, 255, 255, 0.98);
+      --panel-soft: rgba(25, 56, 84, 0.05);
+      --line: rgba(25, 56, 84, 0.12);
+      --line-strong: rgba(25, 56, 84, 0.22);
+      --text: #173042;
+      --text-dim: #617688;
+      --accent: #d96f20;
+      --accent-soft: rgba(217, 111, 32, 0.14);
+      --teal: #1c7880;
+      --teal-soft: rgba(28, 120, 128, 0.12);
+      --danger: #b45e56;
+      --danger-soft: rgba(180, 94, 86, 0.12);
+      --shadow: 0 22px 48px rgba(72, 99, 122, 0.14);
+      --radius: 18px;
+      --radius-sm: 12px;
+    }
 
-  #header { grid-column: 1 / -1; background: var(--panel); border-bottom: 1px solid var(--panel-border); padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; }
-  #header h1 { font-size: 15px; font-weight: 700; color: var(--accent); }
-  #header .vin { font-size: 11px; color: var(--text-dim); font-family: 'SF Mono', monospace; }
-  #step-counter { background: var(--accent); color: #fff; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+    * {
+      box-sizing: border-box;
+    }
 
-  #viewport { position: relative; background: #f8f8fb; overflow: hidden; display: flex; flex-direction: column; }
-  #viewport canvas { display: block; flex: 1; }
-  #viewport iframe { flex: 1; border: none; display: none; }
-  #camera-hint { position: absolute; bottom: 10px; left: 12px; font-size: 10px; color: #999; z-index: 5; }
-  #model-toggle { position: absolute; top: 10px; right: 10px; z-index: 10; background: var(--accent); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
-  #model-toggle:hover { opacity: 0.9; }
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top left, rgba(28, 120, 128, 0.12), transparent 30%),
+        radial-gradient(circle at 85% 15%, rgba(217, 111, 32, 0.12), transparent 26%),
+        linear-gradient(180deg, #f7fafc 0%, #edf2f6 100%);
+      color: var(--text);
+      font-family: "Space Grotesk", sans-serif;
+    }
 
-  #side-panel { background: var(--panel); border-left: 1px solid var(--panel-border); display: flex; flex-direction: column; overflow: hidden; }
-  #step-info { padding: 20px; flex: 1; overflow-y: auto; }
-  #step-info h2 { font-size: 20px; color: #111; margin-bottom: 6px; font-weight: 700; }
+    body {
+      min-height: 100vh;
+      padding: 20px;
+    }
 
-  .difficulty-badge { display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
-  .difficulty-easy { background: var(--success-bg); color: var(--easy); border: 1px solid var(--easy); }
-  .difficulty-medium { background: rgba(176,102,0,0.08); color: var(--medium); border: 1px solid var(--medium); }
-  .difficulty-hard { background: var(--warning-bg); color: var(--hard); border: 1px solid var(--hard); }
+    .shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 380px;
+      gap: 18px;
+      min-height: calc(100vh - 40px);
+    }
 
-  .step-description { font-size: 15px; line-height: 1.7; color: var(--text); margin-bottom: 14px; }
-  .step-description strong { color: #000; }
+    .stage {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 14px;
+    }
 
-  .pro-tip { background: var(--info-bg); border-left: 3px solid var(--info); padding: 10px 14px; margin: 12px 0; font-size: 13px; line-height: 1.6; border-radius: 0 8px 8px 0; }
-  .pro-tip::before { content: 'PRO TIP'; display: block; font-size: 10px; font-weight: 700; color: var(--info); letter-spacing: 2px; margin-bottom: 4px; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
 
-  .warning-box { background: var(--warning-bg); border-left: 3px solid var(--hard); padding: 10px 14px; margin: 12px 0; font-size: 13px; line-height: 1.6; border-radius: 0 8px 8px 0; }
-  .warning-box::before { content: 'THIS IS HARD NOW'; display: block; font-size: 10px; font-weight: 700; color: var(--hard); letter-spacing: 2px; margin-bottom: 4px; }
+    .hero {
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+    }
 
-  .fastener-card { background: var(--bg); border: 1px solid var(--panel-border); border-radius: 8px; padding: 12px; margin: 8px 0; }
-  .fastener-card .fc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-  .fastener-card .fc-type { font-size: 13px; font-weight: 600; color: var(--accent); }
-  .fastener-card .fc-qty { font-size: 11px; background: var(--accent); color: #fff; padding: 1px 8px; border-radius: 10px; font-weight: 700; }
-  .fastener-card .fc-details { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 12px; }
-  .fastener-card .fc-label { color: var(--text-dim); }
-  .fastener-card .fc-value { color: #111; text-align: right; font-weight: 600; }
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.5rem, 2.4vw, 2.45rem);
+      letter-spacing: -0.04em;
+    }
 
-  .tool-list { margin: 14px 0; }
-  .tool-list h4 { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
-  .tool-tag { display: inline-block; background: var(--bg); border: 1px solid var(--panel-border); padding: 4px 10px; border-radius: 6px; font-size: 12px; margin: 2px 4px 2px 0; }
+    .hero p {
+      margin: 0;
+      max-width: 760px;
+      color: var(--text-dim);
+      line-height: 1.55;
+      font-size: 0.98rem;
+    }
 
-  #step-timeline { padding: 10px 20px; border-top: 1px solid var(--panel-border); display: flex; gap: 4px; overflow-x: auto; }
-  .timeline-dot { width: 28px; height: 28px; min-width: 28px; border-radius: 50%; background: var(--bg); border: 2px solid var(--panel-border); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; color: var(--text); }
-  .timeline-dot:hover { border-color: var(--accent); }
-  .timeline-dot.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .timeline-dot.completed { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+    .badge-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
 
-  #transport { grid-column: 1 / -1; background: var(--panel); border-top: 1px solid var(--panel-border); padding: 10px 24px; display: flex; align-items: center; gap: 10px; }
-  .transport-btn { background: var(--bg); border: 1px solid var(--panel-border); color: var(--text); width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; transition: all 0.15s; }
-  .transport-btn:hover { background: var(--accent-light); border-color: var(--accent); }
-  .transport-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  #progress-bar-container { flex: 1; height: 6px; background: rgba(0,0,0,0.08); border-radius: 3px; cursor: pointer; }
-  #progress-bar { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; position: relative; }
-  #progress-bar::after { content: ''; position: absolute; right: -6px; top: -4px; width: 14px; height: 14px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px rgba(212,80,10,0.3); }
-  #time-display { font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+    .pill {
+      border: 1px solid var(--line-strong);
+      background: var(--panel-soft);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
 
-  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.4); } }
+    .viewer-card {
+      position: relative;
+      overflow: hidden;
+      height: clamp(520px, 66vh, 760px);
+      min-height: 520px;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(28, 120, 128, 0.1), transparent 26%),
+        radial-gradient(circle at 84% 18%, rgba(217, 111, 32, 0.09), transparent 24%),
+        linear-gradient(180deg, #fdfefe 0%, #eef3f7 100%);
+    }
 
-  @keyframes diagram-scan {
-    0%, 100% { transform: translateY(-100%); }
-    50% { transform: translateY(100%); }
-  }
-  #diagram-view { position: relative; }
-  #diagram-view::after {
-    content: '';
-    position: absolute;
-    left: 0; right: 0;
-    height: 2px;
-    background: rgba(0,180,216,0.06);
-    animation: diagram-scan 6s linear infinite;
-    pointer-events: none;
-    z-index: 5;
-  }
-</style>
+    #viewer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .viewer-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      justify-content: space-between;
+      padding: 18px;
+    }
+
+    .viewer-hud,
+    .viewer-readout {
+      align-self: flex-start;
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid rgba(25, 56, 84, 0.12);
+      border-radius: 16px;
+      padding: 12px 14px;
+      max-width: 320px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.76rem;
+      line-height: 1.55;
+      color: #355166;
+      box-shadow: 0 12px 32px rgba(72, 99, 122, 0.12);
+    }
+
+    .viewer-hud strong,
+    .viewer-readout strong {
+      color: var(--teal);
+      font-weight: 600;
+    }
+
+    .stage-footer {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .footer-card {
+      padding: 16px 18px;
+    }
+
+    .footer-card h2,
+    .sidebar-section h2 {
+      margin: 0 0 12px;
+      font-size: 0.92rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--text-dim);
+    }
+
+    .footer-card p,
+    .sidebar-copy {
+      margin: 0;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    .sidebar {
+      display: grid;
+      grid-template-rows: auto auto auto 1fr;
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .sidebar-section {
+      padding: 18px;
+    }
+
+    .warning {
+      border-color: rgba(180, 94, 86, 0.22);
+      background:
+        linear-gradient(180deg, rgba(180, 94, 86, 0.12), rgba(180, 94, 86, 0.04)),
+        var(--panel);
+    }
+
+    .warning h2 {
+      color: #8d4d47;
+    }
+
+    .button-row,
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button,
+    .chip {
+      appearance: none;
+      border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.74);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font: inherit;
+      cursor: pointer;
+      transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+    }
+
+    button:hover,
+    .chip:hover {
+      background: rgba(255, 255, 255, 0.98);
+      border-color: rgba(25, 56, 84, 0.28);
+      transform: translateY(-1px);
+    }
+
+    button.active,
+    .chip.active {
+      background: var(--accent-soft);
+      border-color: rgba(217, 111, 32, 0.42);
+      color: #8f4815;
+    }
+
+    button.secondary.active {
+      background: var(--teal-soft);
+      border-color: rgba(28, 120, 128, 0.32);
+      color: #165f66;
+    }
+
+    .slider-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .slider-row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.84rem;
+      color: var(--text-dim);
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .readout-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .stat {
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      background: rgba(245, 248, 251, 0.9);
+      border: 1px solid rgba(25, 56, 84, 0.08);
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      display: block;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.94rem;
+      color: var(--text);
+    }
+
+    .step-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .step-card {
+      border: 1px solid rgba(25, 56, 84, 0.08);
+      background: rgba(247, 250, 252, 0.92);
+      border-radius: 16px;
+      padding: 14px;
+      cursor: pointer;
+      transition: border-color 160ms ease, background 160ms ease;
+    }
+
+    .step-card:hover {
+      border-color: rgba(25, 56, 84, 0.22);
+      background: rgba(255, 255, 255, 1);
+    }
+
+    .step-card.active {
+      border-color: rgba(115, 224, 219, 0.4);
+      background: rgba(115, 224, 219, 0.09);
+    }
+
+    .step-card h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .step-card p {
+      margin: 0;
+      color: var(--text-dim);
+      line-height: 1.55;
+      font-size: 0.92rem;
+    }
+
+    .step-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+
+    .meta-pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(244, 248, 251, 0.96);
+      border: 1px solid rgba(25, 56, 84, 0.08);
+    }
+
+    .source-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .source-link {
+      display: block;
+      color: var(--text);
+      text-decoration: none;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(247, 250, 252, 0.96);
+      border: 1px solid rgba(25, 56, 84, 0.08);
+      transition: border-color 160ms ease, background 160ms ease;
+    }
+
+    .source-link:hover {
+      border-color: rgba(253, 127, 44, 0.35);
+      background: rgba(253, 127, 44, 0.08);
+    }
+
+    .source-link small {
+      display: block;
+      margin-top: 6px;
+      color: var(--text-dim);
+      line-height: 1.45;
+    }
+
+    .status {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      min-height: 1.2em;
+    }
+
+    @media (max-width: 1180px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        grid-template-rows: repeat(4, auto);
+      }
+    }
+
+    @media (max-width: 900px) {
+      body {
+        padding: 12px;
+      }
+
+      .hero {
+        flex-direction: column;
+      }
+
+      .stage-footer {
+        grid-template-columns: 1fr;
+      }
+
+      .viewer-overlay {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+  </style>
 </head>
 <body>
-<div id="app">
-  <div id="header">
-    <div>
-      <h1>2013 CAMARO RS - PASSENGER FENDER INSTALL</h1>
-      <span class="vin">VIN 2G1FB1**38D9148009 &middot; Fender GM 20943622 &middot; 5th Gen Zeta</span>
-    </div>
-    <span id="step-counter">Step 1 / 16</span>
-  </div>
+  <main class="shell">
+    <section class="stage">
+      <header class="panel hero">
+        <div>
+          <h1>Camaro Fender Fit Lab</h1>
+          <p>
+            This rebuild drops the fake Sketchfab-plus-diagram workflow and uses the local STL directly.
+            The scene is now an engineering-style viewer: trimmed shell context, edge extraction, a movable fender slice,
+            install-zone presets, and adjustable cut bounds so you can isolate the front corner you actually care about.
+          </p>
+        </div>
+        <div class="badge-stack">
+          <span class="pill">Asset: `camaro-print-shell-trimmed.stl`</span>
+          <span class="pill">Mode: line-fit sandbox</span>
+          <span class="pill">Viewer: Three.js + STLLoader</span>
+        </div>
+      </header>
 
-  <div id="viewport">
-    <iframe id="sketchfab-embed"
-      src="https://sketchfab.com/models/e0dc72a58f01413b8b9ba67e2bd09344/embed?autostart=1&autospin=0&ui_infos=0&ui_controls=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0&ui_hint=0"
-      style="display:block; flex:1; border:none;"
-      allow="autoplay; fullscreen; xr-spatial-tracking"
-      allowfullscreen></iframe>
-    <button id="tire-toggle" style="position:absolute;top:10px;left:12px;z-index:10;background:#445566;color:white;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;" onclick="toggleWireframe()">Wireframe</button>
-    <div id="diagram-view" style="display:none; flex:1; overflow:hidden; background:#fafbfe;
-  background-image:
-    linear-gradient(90deg, rgba(0,180,216,0.05) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(0,180,216,0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,180,216,0.02) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(0,180,216,0.02) 1px, transparent 1px);
-  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;">
-    </div>
-    <button id="model-toggle" onclick="toggleModel()">Switch to Diagram</button>
-    <button id="practice-toggle" onclick="togglePractice()" style="display:none;position:absolute;top:46px;right:10px;z-index:10;background:#1a5aaa;color:white;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Practice Mode</button>
-    <button id="practice-reset" onclick="resetPractice()" style="display:none;position:absolute;top:82px;right:10px;z-index:10;background:#555566;color:white;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Reset</button>
-    <div id="camera-hint">Drag to rotate | Scroll to zoom | Right-drag to pan</div>
-  </div>
+      <section class="panel viewer-card">
+        <canvas id="viewer"></canvas>
+        <div class="viewer-overlay">
+          <div class="viewer-hud">
+            <div><strong>Ctrl + drag</strong> rotate world</div>
+            <div><strong>Shift + drag</strong> pan world</div>
+            <div><strong>Shift + wheel</strong> zoom</div>
+            <div><strong>Gizmo</strong> still moves or rotates the extracted slice directly</div>
+          </div>
+          <div class="viewer-readout" id="viewer-readout">
+            <div><strong>Loading shell...</strong></div>
+          </div>
+        </div>
+      </section>
 
-  <div id="side-panel">
-    <div id="step-info"></div>
-    <div id="step-timeline"></div>
-  </div>
+      <section class="stage-footer">
+        <article class="panel footer-card">
+          <h2>Why This Is Better</h2>
+          <p>
+            The old app never loaded your source model. It embedded somebody else&apos;s car viewer and layered a 2D diagram on top.
+            This version works from your STL and lets you physically pull out the front-corner slice as its own movable guide.
+          </p>
+        </article>
+        <article class="panel footer-card">
+          <h2>What Still Blocks Accuracy</h2>
+          <p>
+            The STL is a printable whole-body shell with supports baked in. It does not contain a true fender part, hole geometry,
+            bracket faces, or fastener hardware. The install markers are guidance points, not exact mesh-derived holes.
+          </p>
+        </article>
+        <article class="panel footer-card">
+          <h2>Best Upgrade Path</h2>
+          <p>
+            If you can get a clean front-right fender CAD, STEP, OBJ, or a support-free STL, this viewer can swap from
+            region extraction to a true part overlay with much better fit-up and fastener alignment.
+          </p>
+        </article>
+      </section>
+    </section>
 
-  <div id="transport">
-    <button class="transport-btn" id="btn-start" title="Go to start">&#x23EE;</button>
-    <button class="transport-btn" id="btn-prev" title="Previous step">&#x23EA;</button>
-    <button class="transport-btn active" id="btn-play" title="Play/Pause">&#x25B6;</button>
-    <button class="transport-btn" id="btn-next" title="Next step">&#x23E9;</button>
-    <button class="transport-btn" id="btn-end" title="Go to end">&#x23ED;</button>
-    <div id="progress-bar-container"><div id="progress-bar" style="width:0%"></div></div>
-    <button class="transport-btn" id="btn-speed" title="Playback speed">1x</button>
-    <span id="time-display">0:00</span>
-  </div>
-</div>
+    <aside class="sidebar">
+      <section class="panel sidebar-section warning">
+        <h2>Asset Reality Check</h2>
+        <p class="sidebar-copy">
+          Your archive contains a <strong>single Blender-exported binary STL</strong> of a small printable Camaro body with print supports.
+          It is not a repair assembly model. That is why the previous app drifted into theater instead of useful installation tooling.
+        </p>
+      </section>
 
-<script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js"></script>
-<script>
+      <section class="panel sidebar-section">
+        <h2>Control Deck</h2>
+        <div class="button-row" id="side-presets"></div>
+        <div class="button-row" style="margin-top: 12px;" id="camera-presets"></div>
+        <div class="button-row" style="margin-top: 12px;">
+          <button type="button" class="secondary active" data-style="xray">X-Ray Shell</button>
+          <button type="button" class="secondary" data-style="line">Line Shell</button>
+          <button type="button" class="secondary" data-style="slice">Slice Only</button>
+        </div>
+        <div class="button-row" style="margin-top: 12px;">
+          <button type="button" class="transform-mode active" data-mode="translate">Translate</button>
+          <button type="button" class="transform-mode" data-mode="rotate">Rotate</button>
+          <button type="button" id="reset-slice">Reset Slice</button>
+          <button type="button" id="snap-slice">Snap Home</button>
+        </div>
+        <div class="readout-grid">
+          <div class="stat">
+            <span class="stat-label">Shell Triangles</span>
+            <span class="stat-value" id="shell-triangles">-</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Slice Triangles</span>
+            <span class="stat-value" id="slice-triangles">-</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Model Size</span>
+            <span class="stat-value" id="model-size">-</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Slice Bounds</span>
+            <span class="stat-value" id="slice-size">-</span>
+          </div>
+        </div>
+        <div class="status" id="status-line"></div>
+      </section>
 
-// ==========================================
-// STEP DATA
-// ==========================================
-const STEPS = [
-  { id:1, title:"Prep & Inventory Check", difficulty:"easy",
-    description:`<strong>New fender: GM 20943622</strong> (fits all 2010-2015 Camaro trims identically).<br><br>Lay out all fasteners and clips. <strong>Count everything.</strong> Your new fender does NOT include hardware - reuse from old fender.<br><br><strong>Sound foam pads:</strong> Check you have the U-shaped isolator pads that go between fender and body at each bolt point (~7 pads). Transfer from old fender if needed.`,
-    fasteners:[
-      {type:"10mm Head Hex Bolts",qty:"7-8",spec:"Fender-to-body (all locations)",torque:"9-10 N-m (~7 ft-lbs)"},
-      {type:"Push-Pin Retainers (GM 11589292)",qty:"6-8",spec:"Liner clips, 20mm head, 8.5mm hole",torque:"Push to click"},
-      {type:"T20 Torx Screws (GM 11548270)",qty:"3",spec:"Liner to bumper",torque:"Snug"},
-      {type:"U-Shaped Sound Foam Pads",qty:"~7",spec:"Between fender & body at each bolt point",torque:"Adhesive/friction fit"},
-    ],
-    tools:["Parts tray","Flashlight","10mm socket","T20 Torx bit"],
-    tip:"Buy spare push-pins (GM 11589292) and rocker clips. A 170-piece clip kit covers everything.",
-    cam:{x:5,y:3,z:5}, target:{x:0,y:0.3,z:0}, showBolts:[], showGaps:[], fenderOn:false, dur:15 },
-  { id:2, title:"Protect Adjacent Panels", difficulty:"easy",
-    description:`Apply <strong>2-3 layers of masking tape</strong> along the door edge, hood edge, and bumper. Use 3M green automotive tape. Tape the new fender edges too.`,
-    fasteners:[], tools:["Masking tape (2\" wide)","Microfiber cloth"],
-    tip:"Slide tube socks over bumper ends to prevent nicking paint.",
-    cam:{x:4,y:2,z:4}, target:{x:0,y:0.3,z:0}, showBolts:[], showGaps:[], fenderOn:false, dur:10 },
-  { id:3, title:"Verify Brackets & Side Marker", difficulty:"medium",
-    description:`Check upper and lower fender brackets are on the body. Find the <strong>side marker 2-pin connector</strong> dangling free.<br><br><strong>Place sound foam pads</strong> on the body rails at each bolt point now, before offering up the fender.`,
-    fasteners:[{type:"U-Shaped Foam Pads",qty:"~7",spec:"At each bolt point on body",torque:"Adhesive"}],
-    tools:["10mm socket","Ratchet"],
-    warning:"If brackets are bent, remove and bench-straighten. A bent bracket = bad alignment forever.",
-    cam:{x:3,y:2,z:3}, target:{x:0.5,y:0.5,z:0}, showBolts:['side_marker'], showGaps:[], fenderOn:false, dur:12 },
-  { id:4, title:"Offer Up the Fender (Dry Fit)", difficulty:"hard",
-    description:`<strong>This is hard now.</strong> Get a helper. 11-13 lbs, awkward shape. Guide the top edge onto the mounting rail.<br><br>Line up <strong>rear bolt holes first</strong> (A-pillar area). Do NOT insert bolts yet.`,
-    fasteners:[], tools:["A helper","Moving blanket"],
-    warning:"Do NOT rest fender on rocker or let it swing into the door.",
-    cam:{x:3,y:2.5,z:2}, target:{x:0.5,y:0.3,z:0.3}, showBolts:['a_pillar'], showGaps:[], fenderOn:true, dur:20 },
-  { id:5, title:"Start Rear Bolts (A-Pillar)", difficulty:"medium",
-    description:`Hand-thread <strong>2 bolts</strong> into the A-pillar holes. <strong>10mm head. Finger-tight only!</strong><br><br>One near the top (dash area), one lower on hinge pillar.`,
-    fasteners:[{type:"10mm Head Hex Bolt",qty:"2",spec:"A-pillar / hinge pillar",torque:"FINGER TIGHT"}],
-    tools:["10mm socket","6\" extension","Ratchet"],
-    tip:"Open the door all the way for clear access.",
-    cam:{x:0,y:2,z:3}, target:{x:-0.8,y:0.3,z:0.3}, showBolts:['a_pillar'], showGaps:[], fenderOn:true, dur:15 },
-  { id:6, title:"Top Rail Bolts (Hood Line)", difficulty:"medium",
-    description:`Install <strong>3 bolts along the top edge</strong> under the hood. Easiest bolts on the job. <strong>Finger-tight plus one turn.</strong>`,
-    fasteners:[{type:"10mm Head Hex Bolt",qty:"3",spec:"Top edge / under hood",torque:"SNUG ONLY"}],
-    tools:["10mm socket","6\" extension","Ratchet"],
-    tip:"Slotted holes give side-to-side adjustment for hood gap. Center the bolt in the slot.",
-    cam:{x:2,y:4,z:2}, target:{x:0.5,y:0.8,z:0}, showBolts:['top_rail'], showGaps:[], fenderOn:true, dur:15 },
-  { id:7, title:"Front Bolts (Bumper Support)", difficulty:"medium",
-    description:`Install <strong>2-3 bolts (10mm)</strong> at the front edge. The fender tab is <strong>sandwiched between bumper bracket and bumper cover</strong>.`,
-    fasteners:[{type:"10mm Head + Backing Plate",qty:"2-3",spec:"Bumper-to-fender sandwich",torque:"SNUG ONLY"}],
-    tools:["10mm socket","6\" extension"],
-    tip:"Gently pull bumper cover forward at corner to slip fender tab behind it.",
-    cam:{x:3,y:1.5,z:0.5}, target:{x:1.5,y:0.3,z:0.3}, showBolts:['front'], showGaps:[], fenderOn:true, dur:12 },
-  { id:8, title:"Lower / Rocker Bolts", difficulty:"hard",
-    description:`<strong>This is hard now.</strong> Pull down rocker panel trim to access <strong>2 bolts</strong>. Clips WILL break. Use plastic pry tools only.`,
-    fasteners:[{type:"10mm Head Hex Bolt",qty:"2",spec:"Behind rocker trim",torque:"SNUG ONLY"}],
-    tools:["10mm socket","12\" extension","Plastic trim tool","Flashlight"],
-    warning:"Rocker clips WILL break. Have spares. Do NOT use metal tools on rocker trim.",
-    cam:{x:2,y:0.3,z:3}, target:{x:0,y:-0.1,z:0.3}, showBolts:['lower'], showGaps:[], fenderOn:true, dur:25 },
-  { id:9, title:"The Hidden Bolt Behind Foam", difficulty:"hard",
-    description:`<strong>Don't skip this bolt.</strong> Behind the wheel arch foam:<br>1. Pry off star-nut retainer<br>2. Pull foam panel away<br>3. 10mm deep socket on 12" extension<br>4. Thread nut finger-tight`,
-    fasteners:[{type:"10mm Nut on Stud",qty:"1",spec:"Behind foam, lower wheel arch",torque:"SNUG"},{type:"Star Nut Retainer",qty:"1",spec:"Foam panel",torque:"Push on"}],
-    tools:["10mm deep socket","12\" extension","Flashlight","Trim tool"],
-    warning:"Working blind. Feel for the stud first. Cross-threading means removing the fender to fix.",
-    cam:{x:2.5,y:0.5,z:2.5}, target:{x:1,y:0,z:0.5}, showBolts:['hidden'], showGaps:[], fenderOn:true, dur:20 },
-  { id:10, title:"Connect Side Marker Light", difficulty:"easy",
-    description:`Plug the <strong>2-pin connector</strong> into the new fender's marker socket. Standard <strong>194 bulb</strong>. Turn wheels left for room.`,
-    fasteners:[{type:"2-Pin Connector",qty:"1",spec:"194 bulb socket",torque:"Push to click"}],
-    tools:["Hands","Flashlight"],
-    tip:"Hard with big hands. Remove liner completely rather than forcing it.",
-    cam:{x:3,y:1.5,z:1.5}, target:{x:1.2,y:0.2,z:0.5}, showBolts:['side_marker'], showGaps:[], fenderOn:true, dur:8 },
-  { id:11, title:"Set Door Gap (Critical)", difficulty:"hard",
-    description:`<strong>Most critical step.</strong> Close door gently. Target: <strong>4.0-5.0mm</strong>, parallel top to bottom. Match driver side. Adjust via A-pillar bolts.`,
-    fasteners:[], tools:["Gap gauge","10mm wrench"],
-    tip:"Credit card = ~0.8mm. Stack 5-6 for 4.5mm. Flat screwdriver can wedge for more gap.",
-    warning:"Do NOT close door hard. If too tight, it WILL damage both panels.",
-    cam:{x:-1,y:2,z:4}, target:{x:-0.5,y:0.3,z:0.3}, showBolts:['a_pillar'], showGaps:['door'], fenderOn:true, dur:25 },
-  { id:12, title:"Set Hood Gap", difficulty:"medium",
-    description:`Close hood. Target: <strong>3.5-5.0mm</strong>. Adjust via top rail bolts in slotted holes. Hood should sit <strong>flush to 1mm below</strong> fender.`,
-    fasteners:[], tools:["Gap gauge","10mm wrench"],
-    tip:"Hood rubber bumper stops turn up/down for height. 2 Torx screws near latch for fascia height.",
-    cam:{x:2,y:4,z:3}, target:{x:0.5,y:0.8,z:0}, showBolts:['top_rail'], showGaps:['hood'], fenderOn:true, dur:20 },
-  { id:13, title:"Set Bumper Junction", difficulty:"medium",
-    description:`Target: <strong>1.0-3.0mm</strong>. Bumper tucks under fender. Adjust via front 10mm bolts. Surface <strong>within 1mm flush</strong>.`,
-    fasteners:[], tools:["Gap gauge","10mm wrench"],
-    tip:"If uneven, check bumper-to-fender bracket GM 92243313 is intact.",
-    cam:{x:4,y:1.5,z:1}, target:{x:1.5,y:0.3,z:0.3}, showBolts:['front'], showGaps:['bumper'], fenderOn:true, dur:15 },
-  { id:14, title:"Final Torque Sequence", difficulty:"medium",
-    description:`Torque in order:<br>1. A-pillar - 9-10 N-m<br>2. Top rail (rear→front) - 9-10 N-m<br>3. Lower/rocker - 9-10 N-m<br>4. Front/bumper - 9-10 N-m<br>5. Hidden bolt - snug<br><br><strong>Re-check all gaps!</strong>`,
-    fasteners:[{type:"All 10mm Bolts",qty:"7-8",spec:"All mounting points",torque:"9-10 N-m (~7 ft-lbs)"},{type:"Hidden 10mm Nut",qty:"1",spec:"Behind foam",torque:"Snug"}],
-    tools:["Torque wrench (low range)","10mm socket"],
-    warning:"9-10 N-m is barely tight. Snug plus quarter turn. J-nuts WILL STRIP if overtorqued.",
-    cam:{x:4,y:3,z:4}, target:{x:0,y:0.3,z:0}, showBolts:['all'], showGaps:[], fenderOn:true, dur:25 },
-  { id:15, title:"Install Liner & Clips", difficulty:"easy",
-    description:`Reinstall <strong>liner GM 22863722</strong>. Push-pin retainers, 7mm screws, and <strong>3x T20 Torx</strong> where liner meets bumper.`,
-    fasteners:[{type:"Push-Pins (GM 11589292)",qty:"6-8",spec:"Liner to fender",torque:"Click"},{type:"7mm Screws",qty:"2-3",spec:"Top edge",torque:"Snug"},{type:"T20 Torx (GM 11548270)",qty:"3",spec:"Liner to bumper",torque:"Snug"}],
-    tools:["Trim tool","7mm socket","T20 Torx bit"],
-    tip:"Don't skip the Torx screws or liner sags at highway speed.",
-    cam:{x:3,y:0.5,z:3}, target:{x:0.8,y:0,z:0.3}, showBolts:[], showGaps:[], fenderOn:true, dur:15 },
-  { id:16, title:"Final Inspection", difficulty:"easy",
-    description:`Remove tape. Walk-around check:<br>- Door gap: 4.0-5.0mm, parallel<br>- Hood gap: 3.5-5.0mm, flush<br>- Bumper: 1.0-3.0mm<br>- No rattles - push firmly<br>- Door/hood full swing, no contact<br><br>Open/close each 5 times.`,
-    fasteners:[], tools:["Gap gauge","Microfiber cloth"],
-    tip:"Take photos of finished gaps for future reference.",
-    cam:{x:5,y:2.5,z:5}, target:{x:0,y:0.3,z:0}, showBolts:[], showGaps:['door','hood','bumper'], fenderOn:true, dur:15 },
-];
+      <section class="panel sidebar-section">
+        <h2>Extracted Fender Bounds</h2>
+        <p class="sidebar-copy">
+          These sliders define the bounding box used to cut the movable front-corner slice out of the body shell.
+          Start from the side presets, then tighten the box until the supports and unrelated bodywork fall away.
+        </p>
+        <div class="slider-grid" id="bounds-sliders" style="margin-top: 14px;"></div>
+      </section>
 
-// ==========================================
-// SKETCHFAB VIEWER API - wireframe & tire control
-// ==========================================
-let sfApi = null;
-let sfReady = false;
-let wireframeOn = false;
-let tiresHidden = false;
-let sceneNodes = [];
+      <section class="panel sidebar-section">
+        <h2>Install Zones</h2>
+        <p class="sidebar-copy">
+          These are approximate install viewpoints and marker groups based on Camaro forum guidance, not geometry-native fastener holes.
+        </p>
+        <div class="step-list" id="install-zones"></div>
+        <div class="source-list" id="research-links"></div>
+      </section>
+    </aside>
+  </main>
 
-// Initialize the Sketchfab API on the existing iframe
-(function initSketchfabAPI() {
-  const iframe = document.getElementById('sketchfab-embed');
-  const client = new Sketchfab(iframe);
-
-  client.init(iframe.src.split('/embed')[0].split('/models/')[1].split('/')[0], {
-    success: function(api) {
-      sfApi = api;
-      api.start();
-      api.addEventListener('viewerready', function() {
-        sfReady = true;
-        // Get scene graph to find tire/wheel nodes
-        api.getNodeMap(function(err, nodes) {
-          if (!err) {
-            sceneNodes = nodes;
-            console.log('Sketchfab nodes loaded:', Object.keys(nodes).length);
-            // Log node names to find tires
-            Object.values(nodes).forEach(n => {
-              if (n.name) console.log('Node:', n.name, n.instanceID);
-            });
-          }
-        });
-      });
-    },
-    error: function() { console.log('Sketchfab API init failed - using basic embed'); },
-    autostart: 1,
-    ui_infos: 0, ui_controls: 0, ui_stop: 0, ui_watermark: 0, ui_hint: 0
-  });
-})();
-
-function toggleWireframe() {
-  if (!sfReady || !sfApi) return;
-  wireframeOn = !wireframeOn;
-  const btn = document.getElementById('tire-toggle');
-
-  if (wireframeOn) {
-    btn.textContent = 'Solid';
-    sfApi.setWireframe(true);
-    // Hide tires/wheels
-    Object.values(sceneNodes).forEach(node => {
-      if (node.name && (
-        node.name.toLowerCase().includes('tire') ||
-        node.name.toLowerCase().includes('tyre') ||
-        node.name.toLowerCase().includes('wheel') ||
-        node.name.toLowerCase().includes('rim') ||
-        node.name.toLowerCase().includes('roda') ||
-        node.name.toLowerCase().includes('ban')
-      )) {
-        sfApi.hide(node.instanceID);
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/"
       }
-    });
-  } else {
-    btn.textContent = 'Wireframe';
-    sfApi.setWireframe(false);
-    Object.values(sceneNodes).forEach(node => {
-      if (node.name && (
-        node.name.toLowerCase().includes('tire') ||
-        node.name.toLowerCase().includes('tyre') ||
-        node.name.toLowerCase().includes('wheel') ||
-        node.name.toLowerCase().includes('rim') ||
-        node.name.toLowerCase().includes('roda') ||
-        node.name.toLowerCase().includes('ban')
-      )) {
-        sfApi.show(node.instanceID);
-      }
-    });
-  }
-}
-
-// ==========================================
-// CAMERA POSITIONS PER STEP (Sketchfab API)
-// ==========================================
-// Sketchfab camera: position [x,y,z], target [x,y,z]
-// The model is centered roughly at origin. Passenger fender is on the +X side.
-// Front of car is roughly +Y, top is +Z
-const stepCameras = {
-  0:  { pos: [3, -4, 2],    tgt: [0.5, 1, 0.3] },    // overview, passenger 3/4
-  1:  { pos: [3, -4, 2],    tgt: [0.5, 1, 0.3] },    // protect panels
-  2:  { pos: [2, -2, 1.5],  tgt: [0.8, 1.5, 0.2] },  // brackets & marker
-  3:  { pos: [2.5, -3, 1.8],tgt: [0.5, 1, 0.3] },    // dry fit
-  4:  { pos: [1.5, -1, 1],  tgt: [0.3, 0.2, 0.3] },  // A-pillar bolts (rear of fender, near door)
-  5:  { pos: [2, -1, 2.5],  tgt: [0.5, 1.5, 0.5] },  // top rail (looking down at hood line)
-  6:  { pos: [2.5, -2, 0.8],tgt: [0.8, 2.5, 0.2] },  // front bolts (bumper area)
-  7:  { pos: [2, -2, 0.2],  tgt: [0.5, 0.5, -0.2] }, // lower/rocker (looking under)
-  8:  { pos: [2.5, -2, 0.3],tgt: [0.8, 1.5, -0.1] }, // hidden bolt (wheel well area)
-  9:  { pos: [2.5, -2, 0.8],tgt: [0.8, 2.2, 0.2] },  // side marker
-  10: { pos: [1.5, -1.5, 1],tgt: [0.3, 0.2, 0.3] },  // door gap
-  11: { pos: [2, -1, 2.5],  tgt: [0.5, 1.5, 0.6] },  // hood gap
-  12: { pos: [2, -3, 1],    tgt: [0.5, 2.5, 0.2] },  // bumper junction
-  13: { pos: [3, -4, 2],    tgt: [0.5, 1, 0.3] },    // torque sequence (full view)
-  14: { pos: [2.5, -2.5, 0.5],tgt:[0.8, 1.5, 0] },   // liner/clips (wheel well)
-  15: { pos: [3.5, -4.5, 2.5],tgt:[0, 0, 0.3] },     // final inspection
-};
-
-function moveCameraToStep(idx) {
-  if (!sfReady || !sfApi) return;
-  const cam = stepCameras[idx] || stepCameras[0];
-  sfApi.setCameraLookAt(cam.pos, cam.tgt, 1.5); // 1.5 second transition
-}
-
-// Auto-enable wireframe and move camera on first load
-let initialSetupDone = false;
-function doInitialSetup() {
-  if (initialSetupDone || !sfReady) return;
-  initialSetupDone = true;
-  // Start in wireframe mode, zoomed on fender
-  setTimeout(() => {
-    toggleWireframe(); // enable wireframe
-    moveCameraToStep(0);
-  }, 1000);
-}
-
-// ==========================================
-// VIEW TOGGLE: 3D Model <-> Diagram
-// ==========================================
-let showingModel = true;
-
-let practiceActive = false;
-
-function toggleModel() {
-  showingModel = !showingModel;
-  const embed = document.getElementById('sketchfab-embed');
-  const diagram = document.getElementById('diagram-view');
-  const btn = document.getElementById('model-toggle');
-  const hint = document.getElementById('camera-hint');
-  const practiceBtn = document.getElementById('practice-toggle');
-  const resetBtn = document.getElementById('practice-reset');
-
-  if (showingModel) {
-    embed.style.display = 'block';
-    diagram.style.display = 'none';
-    btn.textContent = 'Switch to Diagram';
-    hint.style.display = 'block';
-    practiceBtn.style.display = 'none';
-    resetBtn.style.display = 'none';
-    // Exit sandbox if active
-    if (practiceActive && window._diagram) {
-      window._diagram.exitSandbox();
-      practiceActive = false;
-      practiceBtn.textContent = 'Practice Mode';
-      practiceBtn.style.background = '#1a5aaa';
     }
-  } else {
-    embed.style.display = 'none';
-    diagram.style.display = 'flex';
-    btn.textContent = 'Switch to 3D Model';
-    hint.style.display = 'none';
-    practiceBtn.style.display = 'block';
-    initD3Diagram().then(() => {
-      window._diagram.updateStep(currentStep, STEPS[currentStep]);
-    });
-  }
-}
-
-function togglePractice() {
-  if (!window._diagram) return;
-  const practiceBtn = document.getElementById('practice-toggle');
-  const resetBtn = document.getElementById('practice-reset');
-
-  if (!practiceActive) {
-    practiceActive = true;
-    window._diagram.enterSandbox();
-    practiceBtn.textContent = 'Exit Practice';
-    practiceBtn.style.background = '#c02020';
-    resetBtn.style.display = 'block';
-  } else {
-    practiceActive = false;
-    window._diagram.exitSandbox();
-    practiceBtn.textContent = 'Practice Mode';
-    practiceBtn.style.background = '#1a5aaa';
-    resetBtn.style.display = 'none';
-    // Restore current step
-    window._diagram.updateStep(currentStep, STEPS[currentStep]);
-  }
-}
-
-function resetPractice() {
-  if (!window._diagram || !practiceActive) return;
-  window._diagram.resetSandbox();
-}
-
-function updateScene(idx) {
-  if (!showingModel) {
-    if (window._diagram) window._diagram.updateStep(idx, STEPS[idx]);
-  } else {
-    moveCameraToStep(idx);
-    if (!initialSetupDone) doInitialSetup();
-  }
-}
-
-// ==========================================
-// STEP RENDERING (panel)
-// ==========================================
-let currentStep = 0, isPlaying = false, playbackSpeed = 1, stepStartTime = 0;
-
-function renderStepInfo(idx) {
-  const s = STEPS[idx], panel = document.getElementById('step-info');
-  let h = `<h2>${s.title}</h2><span class="difficulty-badge difficulty-${s.difficulty}">${s.difficulty}</span><div class="step-description">${s.description}</div>`;
-  if (s.warning) h += `<div class="warning-box">${s.warning}</div>`;
-  if (s.tip) h += `<div class="pro-tip">${s.tip}</div>`;
-  if (s.fasteners.length) {
-    h += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin:16px 0 8px;">Fasteners</h4>`;
-    s.fasteners.forEach(f => h += `<div class="fastener-card"><div class="fc-header"><span class="fc-type">${f.type}</span><span class="fc-qty">x${f.qty}</span></div><div class="fc-details"><span class="fc-label">Location</span><span class="fc-value">${f.spec}</span><span class="fc-label">Torque</span><span class="fc-value">${f.torque}</span></div></div>`);
-  }
-  if (s.tools.length) {
-    h += `<div class="tool-list"><h4>Tools</h4>`;
-    s.tools.forEach(t => h += `<span class="tool-tag">${t}</span>`);
-    h += `</div>`;
-  }
-  panel.innerHTML = h;
-  document.getElementById('step-counter').textContent = `Step ${idx+1} / ${STEPS.length}`;
-  document.getElementById('progress-bar').style.width = (idx/(STEPS.length-1)*100)+'%';
-  const tc = document.getElementById('step-timeline'); tc.innerHTML = '';
-  STEPS.forEach((st,i) => {
-    const d = document.createElement('div');
-    d.className = 'timeline-dot'+(i===idx?' active':'')+(i<idx?' completed':'');
-    d.textContent = i+1; d.title = st.title; d.onclick = () => goToStep(i); tc.appendChild(d);
-  });
-  updateScene(idx);
-}
-
-function goToStep(i) { currentStep = Math.max(0, Math.min(STEPS.length-1, i)); stepStartTime = performance.now(); renderStepInfo(currentStep); }
-function nextStep() { if (currentStep < STEPS.length-1) goToStep(currentStep+1); else { isPlaying = false; updatePlayBtn(); } }
-function prevStep() { if (currentStep > 0) goToStep(currentStep-1); }
-function togglePlay() { isPlaying = !isPlaying; if (isPlaying) stepStartTime = performance.now(); updatePlayBtn(); }
-function updatePlayBtn() { const b = document.getElementById('btn-play'); b.innerHTML = isPlaying?'&#x23F8;':'&#x25B6;'; b.classList.toggle('active', isPlaying); }
-function cycleSpeed() { const sp = [0.5,1,1.5,2,3]; playbackSpeed = sp[(sp.indexOf(playbackSpeed)+1)%sp.length]; document.getElementById('btn-speed').textContent = playbackSpeed+'x'; }
-
-document.getElementById('btn-play').onclick = togglePlay;
-document.getElementById('btn-next').onclick = nextStep;
-document.getElementById('btn-prev').onclick = prevStep;
-document.getElementById('btn-start').onclick = () => goToStep(0);
-document.getElementById('btn-end').onclick = () => goToStep(STEPS.length-1);
-document.getElementById('btn-speed').onclick = cycleSpeed;
-document.getElementById('progress-bar-container').onclick = e => { const r = e.currentTarget.getBoundingClientRect(); goToStep(Math.round((e.clientX-r.left)/r.width*(STEPS.length-1))); };
-document.addEventListener('keydown', e => { if(e.key===' '){e.preventDefault();togglePlay();}else if(e.key==='ArrowRight')nextStep();else if(e.key==='ArrowLeft')prevStep(); });
-
-// Auto-advance timer
-function tick() {
-  if (isPlaying) {
-    const elapsed = (performance.now() - stepStartTime) / 1000;
-    const dur = STEPS[currentStep].dur / playbackSpeed;
-    const rem = STEPS.slice(currentStep).reduce((s,st) => s + st.dur, 0) / playbackSpeed;
-    document.getElementById('time-display').textContent = `${Math.floor(rem/60)}:${Math.floor(rem%60).toString().padStart(2,'0')}`;
-    if (elapsed >= dur) nextStep();
-  }
-  requestAnimationFrame(tick);
-}
-
-goToStep(0);
-tick();
-
-// ==========================================
-// D3 DIAGRAM INTEGRATION
-// ==========================================
-let d3DiagramReady = false;
-
-async function initD3Diagram() {
-  if (d3DiagramReady) return;
-  const mod = await import('./js/diagram.js');
-  await mod.initDiagram('#diagram-view');
-  d3DiagramReady = true;
-  window._diagram = mod;
-}
-</script>
+  </script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

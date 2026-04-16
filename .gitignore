@@ -1,0 +1,7 @@
+.playwright-mcp/
+.wrangler/
+dist/
+assets/models/camaro-print-shell.stl
+fixcar-viewer.png
+viewer-light-*.png
+viewer-card*.png
