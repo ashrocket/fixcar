@@ -2,7 +2,7 @@
 
 Fender Fit Lab is a static web tool for the owner and technical helpers of a 2013 Camaro RS. It loads a local STL and shows a Three.js sandbox for fitting a replacement passenger fender. The landing page (index.html) opens with the tool's name and a short explanation, then the 3D viewer. Its job is to explain how to rotate, pan, cut and place the fender slice.
 
-This system formalizes the look already in index.html. It adds no new visual choices to the source styles. The one addition is the Hero primary action described under Landing page anatomy.
+This system formalizes the look already in index.html (mode v2, see Status). The one addition is the Hero primary action described under Landing page anatomy.
 
 ## Voice
 
@@ -35,7 +35,7 @@ Tokens are defined on `:root` in index.html (lines 12-28). Contrast ratios are c
 | accent-ink | #8f4815 | Active orange button text (index.html:242) | ratio 6.65 on panel |
 | teal-ink | #165f66 | Active teal button text (index.html:248) | ratio 7.22 on panel |
 | danger-ink | #8d4d47 | Warning heading text (index.html:208) | ratio 6.29 on panel |
-| readout-ink | #355166 | Monospace readout text (index.html:153); Hero pill text | ratio 8.20 on panel; ratio 7.52 on pill surface (panel-soft over panel, about #f1f3f5) |
+| readout-ink | #355166 | Monospace readout text (index.html:153); Cover tagline in the system | ratio 8.20 on panel; see contrast.py for bg |
 
 Text pairs that pass 4.5:1: text on panel, text on bg, text-dim on panel, teal on panel, the four ink tokens on panel, and the white action text on teal. Two source pairs fail 4.5:1 and are kept exact in formalize mode: text-dim on bg (ratio 4.22) and text-dim on the pill surface (ratio 4.25). The source sets them this way and this system does not change the values.
 
@@ -99,4 +99,13 @@ The source hero has no primary button or link. The action in the Hero preview is
 
 ## Status
 
-formalized
+v2
+
+The system keeps every source value. These are the changes from the source:
+
+| Old | File:line | New | Reason |
+|---|---|---|---|
+| No hero action | index.html:428-442 | Hero adds the primary action "Open the fit viewer" | Landing needs one action; built from existing tokens |
+| h1 clamp(1.5rem, 2.4vw, 2.45rem) | index.html:84 | token type.display holds 2.45rem; preview keeps the clamp | A token cannot hold a clamp |
+
+Hero sub-line copy is verbatim from index.html:431-434. Source pairs text-dim on bg (4.22) and text-dim on panel-soft pill (4.25) fail 4.5:1 and are kept exact.

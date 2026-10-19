@@ -7,7 +7,7 @@ Use the Hero as the top band of the landing page, above the 3D viewer. Use it on
 ## What the consumer supplies
 
 - The page title, `Camaro Fender Fit Lab`.
-- The description, two sentences, as in `preview.html`.
+- The description, two sentences, verbatim from the source (index.html:431-434).
 - The action label, `Open the fit viewer`, and its link to the viewer page.
 - The three pill labels: the asset file name, the viewer mode and the viewer library.
 
@@ -19,5 +19,4 @@ Use the Hero as the top band of the landing page, above the 3D viewer. Use it on
 
 ## Do not
 
-- Do not describe how the project was built or what changed from an earlier version. Describe what the tool does.
 - Do not put `--text-dim` text on the page background. Use it on the panel only (ratio 4.22 on `--bg`).
