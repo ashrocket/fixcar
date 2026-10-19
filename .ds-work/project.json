@@ -1,0 +1,13 @@
+{
+ "n": "fixcar",
+ "target": "design-system",
+ "mode": "formalize",
+ "brief": "Formalize the Fender Fit Lab look (Space Grotesk, IBM Plex Mono, page #eef3f6, ink #173042, orange #d96f20, teal highlight, glass panels). Hero = Fender Fit Lab first screen (index.html).",
+ "ruling": "README readout-ink row: name the elements that really use it in the previews. Hero sub-line: verbatim from index.html:431-434 (ruling 2; shorten only by ending at a sentence boundary). Re-check every citation the defects list (text, accent, teal, line-strong, radius, shadow) and point each at the line that holds the value (ruling 6 for var()). The pill pair 4.25:1 is a source pair kept exact: say so in the token usage (ruling 5).",
+ "defects": [
+  "design-system/README.md:38 (Colour table, readout-ink row): says readout-ink is used for 'Hero pill text' with ratio 7.52 on the pill surface. The Hero preview sets .pill color to var(--text-dim), and components/Hero/README.md:16 specifies --text-dim. The brand book states a usage that the system does not implement.",
+  "design-system/components/Hero/preview.html (p.lead, the sub-line): the copy is rewritten, not the product's copy. Source index.html:431-434 reads 'This rebuild drops the fake Sketchfab-plus-diagram workflow and uses the local STL directly. The scene is now an engineering-style viewer...'. The preview reads 'The viewer loads the local STL directly. It shows a movable fender slice...'. SPEC requires real copy from the product for the Hero sub-line, and the brief fixes the Hero as the real first screen. SOURCES.md claims copy was read from index.html but records no copy citation for this paragraph, and Hero/README.md does not disclose the rewrite.",
+  "design-system/tokens.json (color.text usage cites index.html:43; color.accent cites index.html:272; color.teal cites index.html:159; color.line-strong cites index.html:221; radius.radius cites index.html:69; shadow.shadow cites index.html:70): these cited lines contain var(--...) use sites, not the literal values. The literals sit on the definition lines index.html:12-28, which are cited in the same rows for most tokens, so the values are traceable, but the single cited line does not carry the value. validate.py reports 23 warnings of this kind (citations 60/83 matched). Spec asks that each value cite a line where the value is verified.",
+  "design-system/components/Hero/preview.html (.pill, Hero badges): text-dim (#617688) on panel-soft over panel renders at 4.25:1 for 0.82rem text. SPEC preview contract requires 4.5:1 for text. The Hero README discloses this as a source pair kept exact, but contrast.py's exemption covers only token usage text, not the rendered preview. Judgment call: drop if the check is confined to items 1-6."
+ ]
+}

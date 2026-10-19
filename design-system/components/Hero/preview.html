@@ -1,0 +1,94 @@
+<!-- @dsCard group="Landing" height=520 -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fender Fit Lab hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../tokens.css">
+<style>
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh;
+    padding: var(--space-20);
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    box-sizing: border-box;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .hero {
+    width: 100%;
+    min-width: 0;
+    padding: var(--space-20) var(--space-24);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-16);
+    align-items: flex-start;
+  }
+  .hero-copy { flex: 1 1 420px; min-width: 0; }
+  .hero h1 { margin: 0 0 var(--space-8); color: var(--text); font-size: clamp(1.5rem, 2.4vw, 2.45rem); }
+  .hero p { margin: 0; max-width: 760px; color: var(--text-dim); }
+  .hero-action {
+    display: inline-block;
+    margin-top: var(--space-16);
+    padding: var(--space-10) var(--space-14);
+    border: 1px solid var(--teal);
+    border-radius: var(--radius-pill);
+    background: var(--teal);
+    color: var(--panel-strong);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .hero-action:hover { background: var(--teal-ink); border-color: var(--teal-ink); }
+  .badge-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-10);
+    justify-content: flex-end;
+  }
+  .pill {
+    border: 1px solid var(--line-strong);
+    background: var(--panel-soft);
+    border-radius: var(--radius-pill);
+    padding: var(--space-10) var(--space-14);
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  @media (max-width: 560px) {
+    .hero-copy { flex-basis: 100%; }
+    .hero h1 { overflow-wrap: anywhere; }
+    .badge-stack { justify-content: flex-start; }
+    .pill { white-space: normal; }
+  }
+</style>
+</head>
+<body>
+  <header class="panel hero">
+    <div class="hero-copy">
+      <h1 class="display">Camaro Fender Fit Lab</h1>
+      <p class="lead">
+        The viewer loads the local STL directly.
+        It shows a movable fender slice, install-zone presets and adjustable cut bounds, so you can isolate the front corner you actually care about.
+      </p>
+      <a class="hero-action" href="../../../index.html">Open the fit viewer</a>
+    </div>
+    <div class="badge-stack">
+      <span class="pill">Asset: camaro-print-shell-trimmed.stl</span>
+      <span class="pill">Mode: line-fit sandbox</span>
+      <span class="pill">Viewer: Three.js + STLLoader</span>
+    </div>
+  </header>
+</body>
+</html>

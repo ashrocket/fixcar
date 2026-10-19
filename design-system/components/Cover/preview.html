@@ -1,0 +1,65 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fender Fit Lab cover</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../tokens.css">
+<style>
+  html, body { margin: 0; padding: 0; }
+  body { width: 960px; height: 288px; overflow: hidden; background: var(--bg); }
+  .cover { position: relative; width: 960px; height: 288px; overflow: hidden; background: var(--bg); }
+  .cover svg { position: absolute; left: 0; top: 0; width: 960px; height: 288px; display: block; }
+  .blk-teal { fill: var(--teal); }
+  .blk-accent { fill: var(--accent); }
+  .blk-ink { fill: var(--text); }
+  .dot { fill: var(--line-strong); }
+  .name {
+    position: absolute;
+    left: 40px;
+    bottom: 34px;
+    width: 440px;
+    margin: 0;
+    font-weight: 600;
+    font-size: 66px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .tagline {
+    position: absolute;
+    left: 40px;
+    bottom: 4px;
+    width: 440px;
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--readout-ink);
+  }
+</style>
+</head>
+<body>
+<div class="cover">
+  <svg viewBox="0 0 960 288" aria-hidden="true">
+    <!-- Derivation (1/4): three solid blocks from identity tokens: teal (index.html:22), accent (index.html:20), text ink (index.html:18). -->
+    <!-- Derivation (2/4): arrangement: one tall teal block at left, an accent block over an ink block at right, all right of x=480 and about 36 percent of the cover. -->
+    <!-- Derivation (3/4): pattern is a dot grid, 24px pitch, chosen because the README calls the look an engineering look; dots use line-strong (index.html:17). -->
+    <!-- Derivation (4/4): no radii or steps are drawn; the name sits bottom-left at 66px in the display face, the tagline in readout-ink. -->
+    <defs>
+      <pattern id="dotgrid" width="24" height="24" patternUnits="userSpaceOnUse">
+        <circle class="dot" cx="2" cy="2" r="1.5"/>
+      </pattern>
+    </defs>
+    <rect x="480" y="0" width="480" height="288" fill="url(#dotgrid)"/>
+    <rect class="blk-teal" x="520" y="0" width="300" height="200"/>
+    <rect class="blk-accent" x="820" y="0" width="140" height="120"/>
+    <rect class="blk-ink" x="820" y="120" width="140" height="168"/>
+  </svg>
+  <h1 class="name display">Camaro<br>Fender Fit<br>Lab</h1>
+  <p class="tagline">Engineering-style viewer with a movable fender slice.</p>
+</div>
+</body>
+</html>

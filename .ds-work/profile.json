@@ -1,0 +1,95 @@
+{
+  "project": "fixcar",
+  "what": "A static web tool for a 2013 Camaro RS. Its main page, Fender Fit Lab, loads a local STL and shows a Three.js fender-fit sandbox. The repo also holds a diagnostics project for the car's electrical faults.",
+  "audience": "The car owner and technical helpers who inspect and fit a replacement passenger fender.",
+  "landing_job": "Open the 3D fender-fit tool at index.html and explain how to rotate, pan, cut and place the fender slice.",
+  "surfaces": [
+    {
+      "kind": "web-app",
+      "where": "index.html (Fender Fit Lab, Three.js + STLLoader viewer)"
+    },
+    {
+      "kind": "docs-site",
+      "where": "projects/josiahs-camaro-electrical/README.md (diagnostic notes, not a styled site)"
+    }
+  ],
+  "public_url": "",
+  "brand_family": "",
+  "logo_files": [],
+  "existing_ds": {
+    "paths": [],
+    "has_readme_brandbook": false,
+    "has_tokens": false,
+    "has_cover_or_specimen": false,
+    "has_hero_pattern": false,
+    "has_logo_rules": false,
+    "published_artifact": ""
+  },
+  "identity": {
+    "coherent": true,
+    "look": "A calm engineering look: pale blue-grey page, navy text, glass-like white panels with soft shadows, one orange accent and one teal highlight, with a monospace face for readouts.",
+    "palette": [
+      {
+        "role": "Page background",
+        "value": "#eef3f6",
+        "cite": "index.html:12"
+      },
+      {
+        "role": "Panel surface (translucent white)",
+        "value": "rgba(255, 255, 255, 0.86)",
+        "cite": "index.html:13"
+      },
+      {
+        "role": "Hairline border",
+        "value": "rgba(25, 56, 84, 0.12)",
+        "cite": "index.html:16"
+      },
+      {
+        "role": "Primary text",
+        "value": "#173042",
+        "cite": "index.html:18"
+      },
+      {
+        "role": "Secondary text",
+        "value": "#617688",
+        "cite": "index.html:19"
+      },
+      {
+        "role": "Accent (orange, actions and highlights)",
+        "value": "#d96f20",
+        "cite": "index.html:20"
+      },
+      {
+        "role": "Teal (readout emphasis)",
+        "value": "#1c7880",
+        "cite": "index.html:22"
+      },
+      {
+        "role": "Danger (errors and warnings)",
+        "value": "#b45e56",
+        "cite": "index.html:24"
+      }
+    ],
+    "type": [
+      {
+        "role": "UI and headings",
+        "family": "\"Space Grotesk\", sans-serif (Google Fonts, weights 400-700)",
+        "cite": "index.html:44"
+      },
+      {
+        "role": "Readouts, HUD and pills",
+        "family": "\"IBM Plex Mono\", monospace (Google Fonts, weights 400-600)",
+        "cite": "index.html:150"
+      },
+      {
+        "role": "Font load",
+        "family": "Google Fonts css2 link for both families",
+        "cite": "index.html:9"
+      }
+    ]
+  },
+  "classification": "formalize_from_code",
+  "design_system_dir_conflict": "",
+  "v2_case": "",
+  "notes": "No design-system folder, tokens file or brand book exists. The page defines 17 colour and radius tokens on :root (index.html:12-28), so a formalized system needs no new choices. docs/superpowers/specs holds feature design notes, not a brand system. No logo file exists; the wordmark is plain type: 'Camaro Fender Fit Lab' in h1 (index.html:430)."
+}
